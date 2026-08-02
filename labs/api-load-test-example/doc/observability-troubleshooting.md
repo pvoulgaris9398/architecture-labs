@@ -196,6 +196,19 @@ k6 client metrics do not appear at the API's `/metrics` endpoint. `run-k6.sh` se
 to Prometheus at `/api/v1/write`. If terminal results appear but Prometheus has no `k6_*` series,
 verify that the wrapper—not a direct `k6 run` command—was used and inspect Prometheus logs.
 
+To verify failure correlation without running the normal load profile, deliberately request an
+unknown route for one iteration. A non-zero k6 exit is expected because the status check fails:
+
+```bash
+K6_TEST_ID=correlation-smoke \
+ENDPOINT=v1/not-found \
+  bash run-k6.sh load-test.js --iterations 1 --vus 1
+```
+
+The terminal diagnostic includes `test_id`, `scenario`, `request_id`, and `trace_id`. Search the
+reported trace in Seq with `@TraceId = '...'`. By default, diagnostics are limited to one line for
+each of the first ten VUs, regardless of the total number of failures.
+
 ## 9. Verify Grafana
 
 ```bash

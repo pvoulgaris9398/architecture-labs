@@ -33,8 +33,8 @@ from the active `System.Diagnostics.Activity`; the application must not invent p
 identifiers. The API must return `X-Request-ID` and `X-Trace-ID` response headers for diagnostics.
 It may echo valid `X-Test-ID` and `X-Test-Scenario` values.
 
-The current k6 Prometheus tag is `testid`. Step 6 will migrate it to the canonical `test_id` name
-when request propagation is implemented; dashboards must support that change in the same commit.
+k6 uses the canonical `test_id` Prometheus tag and sends the same value as `X-Test-ID`. The wrapper
+generates and prints a valid ID unless `K6_TEST_ID` is supplied explicitly.
 
 ## Prometheus cardinality policy
 

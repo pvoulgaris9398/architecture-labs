@@ -112,8 +112,26 @@ mistaken for a filesystem path and rewritten to a path under the Git installatio
 
 The wrapper enables k6's experimental Prometheus remote-write output so Grafana can display
 client-side failures such as TCP connection refusals. It sends p95, p99, and maximum trend values
-to `http://localhost:9090/api/v1/write` and tags each run with a unique local test ID. Running `k6 run`
-directly still works, but its client metrics will appear only in the terminal.
+to `http://localhost:9090/api/v1/write` and tags each run with a unique local `test_id`. It also
+sends that ID, the controlled scenario, a request ID, and valid W3C trace context with every API
+request. Running `k6 run` directly still works, but its client metrics will appear only in the
+terminal and its default test ID is `direct-k6`.
+
+When a check fails, k6 prints the returned `request_id` and `trace_id` so the request can be found
+in Seq. Diagnostics default to one failure from each of the first ten VUs—a maximum of ten lines
+per run—to avoid making a failure storm worse. Override the bounds only for focused diagnostics:
+
+```bash
+K6_DIAGNOSTIC_VUS=20 K6_DIAGNOSTICS_PER_VU=2 \
+  bash run-k6.sh load-test.js
+```
+
+Set a meaningful valid ID when comparing named runs; the wrapper otherwise generates one and
+prints it before execution:
+
+```bash
+K6_TEST_ID=scan-with-index-20260802 bash run-k6.sh load-test-scan.js
+```
 
 The default p95 threshold is 150 ms, intentionally leaving little headroom above the artificial
 database delay so saturation becomes visible.

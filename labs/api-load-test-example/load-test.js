@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { sleep, check, fail } from 'k6';
+import { correlatedRequest, reportFailedRequest } from './k6-correlation.js';
 
 const baseUrl = (__ENV.K6_BASE_URL || 'http://127.0.0.1:18080').replace(/\/$/, '');
 const healthUrl = `${baseUrl}/health`;
@@ -27,10 +28,8 @@ export function setup() {
   console.log(`Checking API readiness at ${healthUrl}`);
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const response = http.get(healthUrl, {
-      timeout: '2s',
-      tags: { scenario: 'api-readiness' },
-    });
+    const request = correlatedRequest('api-readiness', {}, 'setup');
+    const response = http.get(healthUrl, { ...request.params, timeout: '2s' });
 
     if (response.status === 200) {
       console.log(`API is ready at ${healthUrl}`);
@@ -64,13 +63,17 @@ export function setup() {
 }
 
 export default function () {
-  const res = http.get(`${baseUrl}${endpoint}`, {
-    tags: { scenario: 'connection-pool', endpoint },
-  });
+  const scenario = 'connection-pool';
+  const request = correlatedRequest(scenario, { endpoint });
+  const res = http.get(`${baseUrl}${endpoint}`, request.params);
 
-  check(res, {
+  const passed = check(res, {
     'status is 200': (r) => r.status === 200,
   });
+
+  if (!passed) {
+    reportFailedRequest(res, request, scenario);
+  }
 
   sleep(0.1);
 }

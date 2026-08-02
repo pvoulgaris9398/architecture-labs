@@ -84,29 +84,34 @@ the API from serving requests.
 - [x] Pin the image according to repository policy, explicitly accept the Seq EULA, and document
   the single-user limitation of the free Individual license.
 - [x] Export structured API logs and API and SQL client spans from the Collector to Seq over OTLP.
-- [ ] Verify traces include HTTP route, response status, SQL operation, duration, and error status
+- [x] Verify traces include HTTP route, response status, SQL operation, duration, and error status
   without exposing SQL credentials or sensitive statement parameters.
-- [ ] Confirm parent-child relationships connect the inbound HTTP request to its database work.
-- [ ] Verify error logs can be filtered by time range, service, test run, and correlation fields.
+- [x] Confirm parent-child relationships connect the inbound HTTP request to its database work.
+- [x] Verify error logs can be filtered by time range, service, test run, and correlation fields.
 
 **Done when:** a known request can be found by `trace_id` in Seq and its structured logs, API span,
 and database timings can be investigated together.
 
 Implemented with pinned Seq 2026.1.17004-x64, a persisted `seq-data` volume, and a bounded OTLP/HTTP
-exporter. Complete the remaining runtime checks and create the documented retention policy in the
-local Seq UI before marking Step 5 done. See [the Seq operating notes](doc/seq.md).
+exporter. The trace hierarchy, structured fields, sensitive-data exclusions, filtering, and
+retention policy were verified against the local stack on August 2, 2026. See
+[the Seq operating notes](doc/seq.md).
 
 ## 6. Propagate test context from k6
 
-- [ ] Send the wrapper's `test_id` and the active scenario with each HTTP request.
-- [ ] Generate or propagate valid W3C trace context from k6 using a documented, maintainable
+- [x] Send the wrapper's `test_id` and the active scenario with each HTTP request.
+- [x] Generate or propagate valid W3C trace context from k6 using a documented, maintainable
   approach.
-- [ ] Record returned request and trace identifiers when a k6 check fails.
-- [ ] Ensure diagnostic logging is rate-limited so a failure storm does not overwhelm the terminal
+- [x] Record returned request and trace identifiers when a k6 check fails.
+- [x] Ensure diagnostic logging is rate-limited so a failure storm does not overwhelm the terminal
   or telemetry pipeline.
-- [ ] Apply the same behavior to `load-test.js` and `load-test-scan.js`.
+- [x] Apply the same behavior to `load-test.js` and `load-test-scan.js`.
 
 **Done when:** a failed k6 request provides enough identifiers to locate its API trace and logs.
+
+Implemented through `k6-correlation.js`, with a maximum of ten diagnostic lines under default
+settings. Run the documented one-iteration failure smoke test and find its reported `trace_id` in
+Seq before treating the runtime acceptance criterion as verified.
 
 ## 7. Connect Grafana investigations to Seq
 

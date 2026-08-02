@@ -27,7 +27,7 @@ The `Orders` table has no index on `CustomerId` at this point. Every request cau
 to scan all 500k rows to find the matching orders.
 
 ```bash
-bash run-k6.sh load-test-scan.js
+K6_TEST_ID=scan-without-index-20260802 bash run-k6.sh load-test-scan.js
 ```
 
 While the test is running, open Grafana at http://localhost:3000 and sign in using the
@@ -68,7 +68,7 @@ can satisfy the query entirely from the index without a key lookup back to the b
 ## Run 2: With index
 
 ```bash
-bash run-k6.sh load-test-scan.js
+K6_TEST_ID=scan-with-index-20260802 bash run-k6.sh load-test-scan.js
 ```
 
 Both runs hit the same query — the only difference is the presence of the index. In Grafana:
@@ -77,6 +77,10 @@ Both runs hit the same query — the only difference is the presence of the inde
 - **Connection Pool** — Free connections stay healthy; Stasis stays near zero because connections
   are returned quickly once queries complete in microseconds instead of milliseconds
 - **Physical Connection Churn** — hard connects should be absent or minimal
+
+The explicit IDs appear in k6 Prometheus metrics, API logs, and traces. Use them in Seq to keep
+the two evidence windows distinct. A failed request also prints its request and trace identifiers
+in the k6 terminal, with bounded output to avoid flooding the load generator.
 
 ## Resetting between runs
 

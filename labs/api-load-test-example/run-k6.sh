@@ -12,8 +12,16 @@ export K6_BASE_URL="${K6_BASE_URL:-http://127.0.0.1:18080}"
 
 test_id="${K6_TEST_ID:-local-${EPOCHSECONDS:-0}-${RANDOM}}"
 
+if [[ ! "${test_id}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]]; then
+  printf 'K6_TEST_ID must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}.\n' >&2
+  exit 2
+fi
+
+export K6_TEST_ID="${test_id}"
+
 printf 'API base URL: %s\n' "${K6_BASE_URL}"
 printf 'k6 metrics destination: %s\n' "${K6_PROMETHEUS_RW_SERVER_URL}"
+printf 'test ID: %s\n' "${K6_TEST_ID}"
 
 health_url="${K6_BASE_URL%/}/health"
 status_marker='__K6_HEALTH_STATUS__'
@@ -54,6 +62,6 @@ printf 'API readiness preflight passed at %s (HTTP 200, server: %s).\n' \
 
 exec k6 run \
   -o experimental-prometheus-rw \
-  --tag "testid=${test_id}" \
+  --tag "test_id=${K6_TEST_ID}" \
   "$@" \
   "$script"
