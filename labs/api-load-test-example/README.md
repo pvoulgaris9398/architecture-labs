@@ -12,6 +12,8 @@ See [next-steps.md](next-steps.md) for the ordered checklist to add correlated l
 request context, Grafana navigation, and an analysis runbook.
 [Observability conventions](doc/observability-conventions.md) define the correlation fields,
 cardinality rules, sampling policy, retention limits, and cleanup safeguards for that work.
+[Experiment results](results/README.md) preserve dated observations, interpretations, limitations,
+and follow-up actions.
 
 The API accepts W3C `traceparent` and `tracestate` context plus optional `X-Request-ID`,
 `X-Test-ID`, and `X-Test-Scenario` headers. Every response includes `X-Request-ID` and
