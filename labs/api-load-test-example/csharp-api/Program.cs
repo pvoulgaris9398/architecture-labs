@@ -89,7 +89,7 @@ app.MapGet(
 );
 
 // Adds a non-clustered index on CustomerId.
-// Call this between load test runs: POST http://localhost:8080/v1/add-index
+// Call this between load test runs: POST http://127.0.0.1:18080/v1/add-index
 app.MapPost(
     "/v1/add-index",
     async () =>
@@ -112,7 +112,7 @@ app.MapPost(
 );
 
 // Drops the index so you can repeat the unindexed run without recreating the table.
-// Call this to reset: POST http://localhost:8080/v1/drop-index
+// Call this to reset: POST http://127.0.0.1:18080/v1/drop-index
 app.MapPost(
     "/v1/drop-index",
     async () =>
@@ -195,4 +195,3 @@ static async Task SeedDatabaseAsync(string connectionString, ILogger logger)
 }
 
 record Order(int OrderId, int CustomerId, DateTime OrderDate, string Status, decimal Amount);
-

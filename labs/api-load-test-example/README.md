@@ -42,10 +42,15 @@ docker compose logs -f api-service
 Wait for `Database seeding complete.` before starting a load test. The initial seed creates a
 500,000-row `Orders` table and can take several seconds.
 
+Both k6 scripts also poll `GET /health` for up to 120 seconds before generating load. Override the
+defaults with `READINESS_ATTEMPTS` and `READINESS_INTERVAL_SECONDS` when a slower machine needs a
+longer startup window. Their `setup()` phase has a three-minute timeout by default; override it
+with `SETUP_TIMEOUT` if the readiness window is increased beyond that.
+
 | Service | URL |
 | --- | --- |
-| API health | http://localhost:8080/health |
-| API Prometheus metrics | http://localhost:8080/metrics |
+| API health | http://127.0.0.1:18080/health |
+| API Prometheus metrics | http://127.0.0.1:18080/metrics |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
@@ -56,20 +61,44 @@ Sign in to Grafana using `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` from 
 The default test calls an endpoint whose SQL query deliberately waits for 100 ms:
 
 ```bash
-k6 run load-test.js
+bash run-k6.sh load-test.js
 ```
 
 Override the API location or endpoint when needed:
 
 ```bash
-k6 run -e BASE_URL=http://localhost:8080 -e ENDPOINT=v1/admin-report load-test.js
+K6_BASE_URL=http://127.0.0.1:18080 \
+  bash run-k6.sh load-test.js -e ENDPOINT=v1/admin-report
 ```
 
 Use a slashless `ENDPOINT` value when running from Git Bash on Windows. A leading `/` can be
 mistaken for a filesystem path and rewritten to a path under the Git installation directory.
 
+The wrapper enables k6's experimental Prometheus remote-write output so Grafana can display
+client-side failures such as TCP connection refusals. It sends p95, p99, and maximum trend values
+to `http://localhost:9090/api/v1/write` and tags each run with a unique local test ID. Running `k6 run`
+directly still works, but its client metrics will appear only in the terminal.
+
 The default p95 threshold is 150 ms, intentionally leaving little headroom above the artificial
 database delay so saturation becomes visible.
+
+If k6 reports that `127.0.0.1:18080` refused the connection, confirm the stack was started from this
+lab directory and inspect readiness and startup logs:
+
+```bash
+curl --fail http://127.0.0.1:18080/health
+docker compose ps
+docker compose logs --tail 100 api-service
+```
+
+The API uses host port `18080` by default because port `8080` is commonly occupied by local web
+servers. Override it with `API_HOST_PORT` in `.env` and set the matching `K6_BASE_URL` when running
+k6. A port collision can be deceptive on Windows: `localhost` may reach the API over IPv6 while
+k6 reaches a different process over IPv4. Use the explicit `127.0.0.1` address in both checks.
+
+The API's `/metrics` endpoint contains server-side .NET and OpenTelemetry measurements only. k6
+client metrics do not appear there; `run-k6.sh` writes them to Prometheus's remote-write receiver
+at `http://localhost:9090/api/v1/write`, where Grafana queries them.
 
 ## Compare a table scan with an index
 
@@ -78,14 +107,14 @@ and after creating a covering index:
 
 ```bash
 # Baseline: no CustomerId index
-k6 run load-test-scan.js
+bash run-k6.sh load-test-scan.js
 
 # Add the index, then repeat
-curl -X POST http://localhost:8080/v1/add-index
-k6 run load-test-scan.js
+curl -X POST http://127.0.0.1:18080/v1/add-index
+bash run-k6.sh load-test-scan.js
 
 # Reset for another baseline
-curl -X POST http://localhost:8080/v1/drop-index
+curl -X POST http://127.0.0.1:18080/v1/drop-index
 ```
 
 See [the full table-scan experiment](doc/table-scan-vs-index-load-test.md) for expected signals

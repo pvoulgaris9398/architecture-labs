@@ -47,9 +47,10 @@ The monitoring connection should use a separate, low-privilege SQL login with on
 | `sqlserver.connections.total`       | `sys.dm_exec_connections` | Total physical connections to the instance                 |
 | `sqlserver.connections.by_database` | `sys.dm_exec_sessions`    | Connection count grouped by `database_name` (label per DB) |
 
-**Exhaustion signal:** When `sqlserver.connections.total` approaches `Max Connections`
-(`sys.configurations` where `name = 'max connections'`) and
-`sqlclient.pool.connections_stasis` (already emitted by the bridge) is non-zero, alert.
+**Pressure signal:** Compare server connection counts with the client-side connections-in-use and
+connections-free gauges plus k6 failure and latency metrics. `sqlclient.pool.connections_stasis`
+describes connections awaiting completion of an action; it is not a count of requests queued for
+a pool slot and must not be used alone as an exhaustion alert.
 
 ---
 
@@ -184,12 +185,11 @@ The following require Extended Events or SQL Server Agent and are intentionally 
 
 1. All metrics in the tables above are visible in Grafana within one polling interval of the
    condition occurring.
-2. `sqlserver.sessions.blocked` > 0 generates a visible spike correlating with elevated
-   `sqlclient.pool.connections_stasis` on the client side.
+2. `sqlserver.sessions.blocked` > 0 generates a visible spike that can be correlated with client
+   connection utilization, k6 latency, and k6 request failures.
 3. `sqlserver.requests.long_running_count` reflects queries exceeding the configured threshold
    within one poll cycle.
 4. The monitoring service does not consume any slots from the application connection pool
    (verify via `sqlclient.pool.pooled_connections` remaining stable while the poller runs).
 5. A monitoring connection failure increments `sqlserver.monitor.poll_errors_total` and does
    not crash the application.
-

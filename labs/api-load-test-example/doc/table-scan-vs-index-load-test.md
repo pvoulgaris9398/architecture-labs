@@ -27,7 +27,7 @@ The `Orders` table has no index on `CustomerId` at this point. Every request cau
 to scan all 500k rows to find the matching orders.
 
 ```bash
-k6 run load-test-scan.js
+bash run-k6.sh load-test-scan.js
 ```
 
 While the test is running, open Grafana at http://localhost:3000 and sign in using the
@@ -54,7 +54,7 @@ Record (or screenshot) the k6 summary and Grafana panels before moving to Run 2.
 Between runs, add the non-clustered index via the management endpoint:
 
 ```bash
-curl -X POST http://localhost:8080/v1/add-index
+curl -X POST http://127.0.0.1:18080/v1/add-index
 ```
 
 Expected response:
@@ -68,7 +68,7 @@ can satisfy the query entirely from the index without a key lookup back to the b
 ## Run 2: With index
 
 ```bash
-k6 run load-test-scan.js
+bash run-k6.sh load-test-scan.js
 ```
 
 Both runs hit the same query — the only difference is the presence of the index. In Grafana:
@@ -83,7 +83,7 @@ Both runs hit the same query — the only difference is the presence of the inde
 To drop the index and repeat the baseline:
 
 ```bash
-curl -X POST http://localhost:8080/v1/drop-index
+curl -X POST http://127.0.0.1:18080/v1/drop-index
 ```
 
 To fully reset the database (drop and re-seed), restart the stack:
@@ -112,4 +112,3 @@ the queue worse.
 Adding the index collapses query time to sub-millisecond range. Connections are returned to the
 pool almost immediately, the pool stays well-stocked with free connections, and throughput
 increases dramatically without changing pool size or any application configuration.
-

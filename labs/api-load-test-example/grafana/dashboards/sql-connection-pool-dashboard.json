@@ -67,7 +67,8 @@
     },
 
     {
-      "title": "Database Error Rate",
+      "title": "API HTTP 5xx Rate (Server-side)",
+      "description": "Responses returned with a 5xx status. TCP connection failures never reach the API and are shown separately by the k6 Client Failure Ratio panel.",
       "type": "stat",
       "id": 3,
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
@@ -93,8 +94,8 @@
     },
 
     {
-      "title": "Pool Exhaustion Risk",
-      "description": "Stasis connections > 0 means the pool is full and the app is queuing new requests. Reclaimed connections > 0 means SqlConnections are being GC'd without Close() being called — a resource leak.",
+      "title": "Pool Anomalies: Stasis and Reclaimed Connections",
+      "description": "Stasis means a connection is awaiting completion of an action, commonly transaction-related; it is not a count of requests queued for a pool slot. Reclaimed connections indicate SqlConnections collected without Close or Dispose.",
       "type": "timeseries",
       "id": 4,
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
@@ -212,6 +213,143 @@
           "custom": { "drawStyle": "line" }
         }
       }
+    },
+
+    {
+      "title": "API Scrape Availability",
+      "description": "Prometheus target availability sampled every five seconds. A brief listener failure between scrapes can still be missed; compare with the k6 client failure panel.",
+      "type": "timeseries",
+      "id": 8,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "up{job=\"csharp-api\"}",
+          "legendFormat": "API up"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "fillOpacity": 20 }
+        }
+      }
+    },
+
+    {
+      "title": "Server Active HTTP Requests",
+      "description": "Requests currently executing inside ASP.NET Core. Connection attempts rejected before acceptance are not included.",
+      "type": "timeseries",
+      "id": 9,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 32 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "sum({__name__=\"http.server.active_requests\"})",
+          "legendFormat": "Active requests"
+        }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 20 } } }
+    },
+
+    {
+      "title": "k6 Client Failure Ratio",
+      "description": "Client-observed failures, including TCP connection refusals, when k6 is run through run-k6.sh with Prometheus remote write enabled.",
+      "type": "timeseries",
+      "id": 10,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "max({__name__=\"k6_http_req_failed_rate\"}) or vector(0)",
+          "legendFormat": "Failed request ratio"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "drawStyle": "line", "fillOpacity": 30 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.01 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "title": "k6 Virtual Users",
+      "type": "timeseries",
+      "id": 11,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 40 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "sum({__name__=\"k6_vus\"}) or vector(0)",
+          "legendFormat": "VUs"
+        }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 20 } } }
+    },
+
+    {
+      "title": "k6 Request Rate",
+      "type": "timeseries",
+      "id": 12,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 40 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "sum(rate({__name__=\"k6_http_reqs_total\"}[30s])) or vector(0)",
+          "legendFormat": "Requests / sec"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 20 } } }
+    },
+
+    {
+      "title": "Connection Pool Utilization",
+      "description": "Connections in use as a percentage of the active connection string's Max Pool Size of 150.",
+      "type": "timeseries",
+      "id": 13,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "100 * {__name__=\"sqlclient.pool.connections_in_use\"} / 150",
+          "legendFormat": "Pool utilization"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "drawStyle": "line", "fillOpacity": 25 }
+        }
+      }
+    },
+
+    {
+      "title": "Average SQL Client Operation Duration",
+      "description": "Rate-derived average from the OpenTelemetry SQL client duration histogram, grouped by database.",
+      "type": "timeseries",
+      "id": 14,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 48 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "sum by (\"db.name\") (rate({__name__=\"db.client.operation.duration_seconds_sum\"}[1m])) / sum by (\"db.name\") (rate({__name__=\"db.client.operation.duration_seconds_count\"}[1m]))",
+          "legendFormat": "{{db.name}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 15 } } }
     }
   ],
   "refresh": "5s",
@@ -244,4 +382,3 @@
   "timezone": "browser",
   "title": "SQL Client & API Performance"
 }
-

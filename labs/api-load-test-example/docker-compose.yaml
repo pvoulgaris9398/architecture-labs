@@ -19,16 +19,22 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
     ports:
-      - "8080:8080"
+      - "${API_HOST_PORT:-18080}:8080"
     depends_on:
       db-server:
         condition: service_healthy
 
   prometheus:
     image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.5.5}
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-remote-write-receiver
     volumes:
       # Apparently this container expects the "prometheus.yml" not "yaml"
       - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
     ports:
       - "9090:9090"
     depends_on:
@@ -52,3 +58,6 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+
+volumes:
+  prometheus-data:

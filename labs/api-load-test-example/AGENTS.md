@@ -11,6 +11,9 @@ This file applies to `labs/api-load-test-example` and extends the Architecture L
 - For Git Bash commands on Windows, avoid passing slash-prefixed URL paths as standalone CLI
   argument values because MSYS path conversion can rewrite them. Prefer values such as
   `ENDPOINT=v1/admin-report` and normalize the leading slash inside the application or script.
+- Use an explicit IPv4 loopback address for host-side API and k6 defaults. On Windows, `localhost`
+  can resolve differently between clients and conceal separate IPv4 and IPv6 listeners. Keep the
+  Compose host port, `K6_BASE_URL`, `.env.example`, and documentation synchronized.
 - Preserve the user's uncommitted changes. Do not commit, push, or otherwise publish changes; the
   user manages Git and GitHub.
 - Keep edits focused on the requested work and avoid unrelated formatting or generated-file churn.
