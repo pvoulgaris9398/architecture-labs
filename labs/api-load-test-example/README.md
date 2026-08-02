@@ -5,8 +5,8 @@
 > See [SOURCE.md](SOURCE.md) for migration provenance.
 
 This project demonstrates how API latency, SQL query performance, and ADO.NET connection-pool
-behavior interact under concurrent load. It runs an ASP.NET Core API, SQL Server, Prometheus,
-and Grafana locally with Docker Compose and uses k6 to generate traffic.
+behavior interact under concurrent load. It runs an ASP.NET Core API, SQL Server, an OpenTelemetry
+Collector, Prometheus, and Grafana locally with Docker Compose and uses k6 to generate traffic.
 
 See [next-steps.md](next-steps.md) for the ordered checklist to add correlated logs, traces,
 request context, Grafana navigation, and an analysis runbook.
@@ -14,6 +14,8 @@ request context, Grafana navigation, and an analysis runbook.
 cardinality rules, sampling policy, retention limits, and cleanup safeguards for that work.
 [Experiment results](results/README.md) preserve dated observations, interpretations, limitations,
 and follow-up actions.
+[The observability troubleshooting runbook](doc/observability-troubleshooting.md) provides
+layer-by-layer connectivity and signal-flow checks.
 
 The API accepts W3C `traceparent` and `tracestate` context plus optional `X-Request-ID`,
 `X-Test-ID`, and `X-Test-Scenario` headers. Every response includes `X-Request-ID` and
@@ -78,6 +80,8 @@ with `SETUP_TIMEOUT` if the readiness window is increased beyond that.
 | --- | --- |
 | API health | http://127.0.0.1:18080/health |
 | API Prometheus metrics | http://127.0.0.1:18080/metrics |
+| Collector health | http://127.0.0.1:13133 |
+| Collector self-metrics | http://127.0.0.1:18888/metrics |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
@@ -149,13 +153,16 @@ and SQL-side diagnostics.
 
 ## Observability
 
-Prometheus scrapes the API every five seconds. Grafana automatically provisions the Prometheus
-data source and the bundled SQL connection-pool dashboard. The API exposes ASP.NET Core and
-SqlClient metrics, including custom gauges bridged from all 16 SqlClient EventCounters.
+Prometheus scrapes the API and Collector every five seconds. Grafana automatically provisions the
+Prometheus data source and the bundled SQL connection-pool dashboard. The API exposes ASP.NET Core
+and SqlClient metrics, including custom gauges bridged from all 16 SqlClient EventCounters.
 
-OTLP export is disabled when `OTEL_EXPORTER_OTLP_ENDPOINT` is blank. To send traces, metrics,
-and logs to an external OpenTelemetry Collector, set the endpoint and protocol in `.env`; the
-Prometheus endpoint remains enabled independently.
+The API sends traces, logs, and an additional OTLP metric stream to the Collector asynchronously;
+Prometheus continues scraping the API directly, so existing metric names and dashboards do not
+depend on the Collector. The Collector currently uses a rate-limited debug exporter as a temporary
+validation sink. Step 5 will replace that sink with Seq for durable logs and traces. See the
+[Collector operating notes](doc/opentelemetry-collector.md) for sampling, queue, health, outage,
+and troubleshooting details.
 
 Optional Windows host metrics expect windows_exporter on port 9182. If it is not installed,
 only that Prometheus target will show as unavailable; API metrics continue to work.

@@ -19,13 +19,31 @@ services:
       Diagnostics__LogSuccessfulRequests: ${LOG_SUCCESSFUL_REQUESTS:-false}
       Diagnostics__LogSlowRequests: ${LOG_SLOW_REQUESTS:-false}
       Diagnostics__SlowRequestThresholdMs: ${SLOW_REQUEST_THRESHOLD_MS:-500}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: ${OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY:-in_memory}
+      OTEL_BSP_MAX_QUEUE_SIZE: ${OTEL_BSP_MAX_QUEUE_SIZE:-4096}
+      OTEL_BSP_EXPORT_TIMEOUT: ${OTEL_BSP_EXPORT_TIMEOUT:-5000}
+      OTEL_BLRP_MAX_QUEUE_SIZE: ${OTEL_BLRP_MAX_QUEUE_SIZE:-4096}
+      OTEL_BLRP_EXPORT_TIMEOUT: ${OTEL_BLRP_EXPORT_TIMEOUT:-5000}
     ports:
       - "${API_HOST_PORT:-18080}:8080"
     depends_on:
       db-server:
         condition: service_healthy
+
+  otel-collector:
+    image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.157.0}
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "${OTEL_GRPC_HOST_PORT:-14317}:4317"
+      - "${OTEL_HTTP_HOST_PORT:-14318}:4318"
+      - "${OTEL_HEALTH_HOST_PORT:-13133}:13133"
+      - "${OTEL_METRICS_HOST_PORT:-18888}:8888"
+    mem_limit: 512m
 
   prometheus:
     image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.5.5}

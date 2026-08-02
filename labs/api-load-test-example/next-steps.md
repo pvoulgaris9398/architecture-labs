@@ -60,12 +60,19 @@ entry for one failed request.
 
 ## 4. Introduce an OpenTelemetry Collector
 
-- [ ] Add a lab-owned collector service and configuration to Docker Compose.
-- [ ] Route application traces and optional logs through OTLP while keeping the existing Prometheus
+- [x] Add a lab-owned collector service and configuration to Docker Compose.
+- [x] Route application traces and optional logs through OTLP while keeping the existing Prometheus
   scrape path functional.
-- [ ] Add health checks, bounded queues, retry behavior, and useful collector self-telemetry.
-- [ ] Pin the current LTS collector image, or the current stable production release if no LTS
+- [x] Add health checks, bounded queues, retry behavior, and useful collector self-telemetry.
+- [x] Pin the current LTS collector image, or the current stable production release if no LTS
   channel exists, following repository policy.
+
+Implemented with the pinned v0.157.0 contrib distribution and documented in
+[the Collector operating notes](doc/opentelemetry-collector.md). The debug exporter is a temporary
+validation sink; Step 5 will add Seq as the durable log and trace backend.
+
+- [x] Run the documented health, self-metrics, ingestion, and Collector-outage smoke checks against
+  the local Docker stack.
 
 **Done when:** the API exports telemetry to the collector and a collector outage does not prevent
 the API from serving requests.
