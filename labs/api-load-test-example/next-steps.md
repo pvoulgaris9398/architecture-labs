@@ -110,22 +110,26 @@ retention policy were verified against the local stack on August 2, 2026. See
 **Done when:** a failed k6 request provides enough identifiers to locate its API trace and logs.
 
 Implemented through `k6-correlation.js`, with a maximum of ten diagnostic lines under default
-settings. Run the documented one-iteration failure smoke test and find its reported `trace_id` in
-Seq before treating the runtime acceptance criterion as verified.
+settings. The one-iteration failure smoke test and its reported `trace_id` were verified in Seq on
+August 2, 2026.
 
 ## 7. Connect Grafana investigations to Seq
 
-- [ ] Keep Prometheus provisioned as Grafana's metrics source and Seq as the detailed investigation
+- [x] Keep Prometheus provisioned as Grafana's metrics source and Seq as the detailed investigation
   interface.
-- [ ] Add dashboard data links to Seq searches for the selected time range and bounded test context
+- [x] Add dashboard data links to Seq searches for the selected time range and bounded test context
   where practical.
-- [ ] Evaluate whether exemplars or another stable link can open a representative trace in Seq
+- [x] Evaluate whether exemplars or another stable link can open a representative trace in Seq
   without adding high-cardinality metric labels.
-- [ ] Add dashboard variables for bounded fields such as `test_id`, scenario, and route.
-- [ ] Validate every PromQL expression and generated Seq link against the running services.
+- [x] Add dashboard variables for bounded fields such as `test_id`, scenario, and route.
+- [x] Validate every PromQL expression and generated Seq link against the running services.
 
 **Done when:** an operator can move from a Grafana metric spike to a focused Seq investigation and
 then navigate between a trace and its correlated logs.
+
+Implemented and documented in [the Grafana-to-Seq workflow](doc/grafana-seq-navigation.md). The
+Prometheus expressions and Seq deep-link route pass service-level validation; complete the short
+interactive dashboard check before treating the operator workflow as accepted.
 
 ## 8. Improve the dashboard investigation workflow
 

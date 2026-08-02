@@ -4,7 +4,20 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": 1,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Investigate selected run in Seq",
+      "tooltip": "Open Seq with the selected test ID and scenario in a stable one-day search window.",
+      "type": "link",
+      "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+    }
+  ],
   "liveNow": false,
   "panels": [
     {
@@ -25,7 +38,14 @@
           "custom": { "drawStyle": "line", "lineInterpolation": "smooth" },
           "unit": "s"
         }
-      }
+      },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate selected run in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+        }
+      ]
     },
 
     {
@@ -90,7 +110,14 @@
             ]
           }
         }
-      }
+      },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate selected run in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+        }
+      ]
     },
 
     {
@@ -262,7 +289,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus" },
-          "expr": "max({__name__=\"k6_http_req_failed_rate\"}) or vector(0)",
+          "expr": "max({__name__=\"k6_http_req_failed_rate\", test_id=~\"$test_id\", scenario=~\"$scenario\"}) or vector(0)",
           "legendFormat": "Failed request ratio"
         }
       ],
@@ -280,7 +307,14 @@
             ]
           }
         }
-      }
+      },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate selected run in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+        }
+      ]
     },
 
     {
@@ -291,7 +325,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus" },
-          "expr": "sum({__name__=\"k6_vus\"}) or vector(0)",
+          "expr": "sum({__name__=\"k6_vus\", test_id=~\"$test_id\"}) or vector(0)",
           "legendFormat": "VUs"
         }
       ],
@@ -306,7 +340,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus" },
-          "expr": "sum(rate({__name__=\"k6_http_reqs_total\"}[30s])) or vector(0)",
+          "expr": "sum(rate({__name__=\"k6_http_reqs_total\", test_id=~\"$test_id\", scenario=~\"$scenario\"}[30s])) or vector(0)",
           "legendFormat": "Requests / sec"
         }
       ],
@@ -349,7 +383,14 @@
           "legendFormat": "{{db.name}}"
         }
       ],
-      "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 15 } } }
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 15 } } },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate selected run in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+        }
+      ]
     }
   ],
   "refresh": "5s",
@@ -369,6 +410,40 @@
         "name": "endpoint",
         "options": [],
         "query": "label_values({__name__=\"http.server.request.duration_seconds_count\"}, \"http.route\")",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus" },
+        "definition": "label_values({__name__=\"k6_http_reqs_total\"}, test_id)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "test_id",
+        "options": [],
+        "query": "label_values({__name__=\"k6_http_reqs_total\"}, test_id)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 2,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus" },
+        "definition": "label_values({__name__=\"k6_http_reqs_total\", test_id=~\"$test_id\"}, scenario)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "scenario",
+        "options": [],
+        "query": "label_values({__name__=\"k6_http_reqs_total\", test_id=~\"$test_id\"}, scenario)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

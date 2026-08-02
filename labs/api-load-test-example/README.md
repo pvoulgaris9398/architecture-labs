@@ -16,6 +16,8 @@ cardinality rules, sampling policy, retention limits, and cleanup safeguards for
 and follow-up actions.
 [The observability troubleshooting runbook](doc/observability-troubleshooting.md) provides
 layer-by-layer connectivity and signal-flow checks.
+[Grafana-to-Seq navigation](doc/grafana-seq-navigation.md) explains how dashboard variables and
+links carry bounded test context into detailed log and trace investigations.
 
 The API accepts W3C `traceparent` and `tracestate` context plus optional `X-Request-ID`,
 `X-Test-ID`, and `X-Test-Scenario` headers. Every response includes `X-Request-ID` and
@@ -187,6 +189,11 @@ storage over OTLP/HTTP. Its rate-limited debug exporter remains only on the dupl
 pipeline because Prometheus continues to scrape the API directly. See the
 [Collector operating notes](doc/opentelemetry-collector.md) and [Seq operating notes](doc/seq.md)
 for sampling, queues, retention, health, outage, and investigation details.
+
+The Grafana dashboard exposes `endpoint`, `test_id`, and `scenario` controls. Its k6 panels honor
+the selected test context, and the dashboard plus key latency, error, and SQL panels link to a Seq
+search for the same test ID and scenario over the last day. Server metrics deliberately do
+not carry test IDs; correlate them by the shared time window.
 
 Optional Windows host metrics expect windows_exporter on port 9182. If it is not installed,
 only that Prometheus target will show as unavailable; API metrics continue to work.
