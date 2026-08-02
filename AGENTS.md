@@ -12,8 +12,7 @@
 - Preserve the user's uncommitted changes. Do not commit, push, publish, or rewrite Git history;
   the user manages Git and GitHub.
 - Keep changes focused and avoid unrelated formatting or generated-file churn.
-- Do not create, copy, or migrate a lab without explicit approval. In particular, the existing
-  API load-test example is only the planned first lab until the user requests its migration.
+- Do not create, copy, or migrate a lab without explicit approval.
 - Read the nearest nested `AGENTS.md` before changing a lab; lab-specific guidance may extend this
   root guidance.
 

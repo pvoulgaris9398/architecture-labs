@@ -1,0 +1,57 @@
+{
+  "window.zoomLevel": 2,
+  "github.copilot.enable": {
+    "*": false,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false
+  },
+  "chat.disableAIFeatures": false,
+  "debug.console.closeOnEnd": false,
+  "debug.openDebug": "openOnDebugBreak",
+  "dotnet.defaultSolution": "none",
+  "workbench.iconTheme": "material-icon-theme",
+  "editor.formatOnSave": true,
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+  "editor.minimap.enabled": false,
+  "editor.stickyScroll.enabled": false,
+  "dotnet.server.useOmnisharp": false,
+  "[csharp]": {
+    "editor.defaultFormatter": "csharpier.csharpier-vscode",
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "editor.inlineSuggest.enabled": false,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always",
+      "source.fixAll": "always"
+    }
+  },
+  "[fsharp]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.defaultFormatter": "Ionide.Ionide-fsharp",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always",
+      "source.fixAll": "always",
+      "formatOnSave": "always"
+    }
+  },
+  "[jsonc]": {
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[xaml]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "dabbinavo.xamlstyler"
+  },
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true,
+    "**/.vs": true,
+    "**/*.Artifacts": true
+  },
+  "csharpier.enableDebugLogs": true
+}
+

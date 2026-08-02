@@ -1,0 +1,54 @@
+name: api-load-test-example
+
+services:
+  db-server:
+    extends:
+      file: ../../shared/compose/sqlserver/service.yaml
+      service: sqlserver-base
+    ports:
+      - "1433:1433"
+
+  api-service:
+    build:
+      context: ./csharp-api/.
+      dockerfile: Dockerfile
+    environment:
+      ConnectionStrings__Master: "Server=db-server;Database=master;User Id=sa;Password=${MSSQL_SA_PASSWORD};Max Pool Size=150;TrustServerCertificate=True;"
+      ConnectionStrings__LoadTest: "Server=db-server;Database=LoadTestDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};Max Pool Size=150;TrustServerCertificate=True;"
+      DOTNET_Metrics_Microsoft_Data_SqlClient: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db-server:
+        condition: service_healthy
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.5.5}
+    volumes:
+      # Apparently this container expects the "prometheus.yml" not "yaml"
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api-service
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:13.1.1}
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      # Data source auto-configuration
+      # Same for data source: "datasource.yml" not "yaml"
+      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      # Dashboard loader configuration
+      # Same for data source: "provider.yml" not "yaml"
+      - ./grafana/provider.yaml:/etc/grafana/provisioning/dashboards/provider.yml:ro
+      # The actual dashboard file schema
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "editorconfig.editorconfig",
+    "pkief.material-icon-theme",
+    "esbenp.prettier-vscode",
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit",
+    "ms-azuretools.vscode-containers",
+    "tintoy.msbuild-project-tools",
+    "humao.rest-client",
+    "csharpier.csharpier-vscode",
+    "ionide.ionide-fsharp"
+  ]
+}
+

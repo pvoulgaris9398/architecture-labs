@@ -1,0 +1,8 @@
+**/.env
+**/[Bb]in/
+**/[Oo]bj/
+**/.vs/
+**/[Tt]est[Rr]esult*/
+**/artifacts/
+*.user
+*.suo

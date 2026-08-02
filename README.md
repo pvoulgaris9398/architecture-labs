@@ -18,7 +18,7 @@ written conclusion grounded in collected evidence.
 - Make results understandable without requiring readers to run every experiment themselves.
 - Demonstrate practical architecture, observability, testing, and technical-writing skills.
 
-## Planned organization
+## Repository organization
 
 The repository will use a monorepo structure while keeping every lab independently runnable:
 
@@ -27,9 +27,11 @@ architecture-labs/
 ├── AGENTS.md
 ├── README.md
 ├── docs/
+│   └── decisions/
 ├── labs/
-│   └── <self-contained-lab>/
+│   └── api-load-test-example/
 ├── shared/
+│   └── compose/
 └── tools/
 ```
 
@@ -52,9 +54,13 @@ Each lab should document:
 
 ## Status
 
-No labs have been added yet. The intended first lab is a migration of the existing API load-test
-example that explores .NET, SQL Server query performance, connection pooling, k6, OpenTelemetry,
-Prometheus, and Grafana. That migration will be planned and performed as a separate change.
+| Lab | Question | Technologies | Status |
+| --- | --- | --- | --- |
+| [API load test](labs/api-load-test-example/README.md) | How do SQL query latency and indexing affect API latency and connection-pool pressure? | .NET 10, SQL Server, k6, OpenTelemetry, Prometheus, Grafana | In progress |
+
+The first lab was migrated from the standalone `api-load-test-example` repository. Its
+[source provenance](labs/api-load-test-example/SOURCE.md) records the originating repository and
+commit while the migration is evaluated.
 
 ## Public-repository policy
 

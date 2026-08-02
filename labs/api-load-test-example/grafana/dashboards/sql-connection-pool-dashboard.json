@@ -1,0 +1,247 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Active Execution Latency (P95 HTTP Request Duration) by Endpoint",
+      "type": "timeseries",
+      "id": 1,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate({__name__=\"http.server.request.duration_seconds_bucket\", \"http.route\"=~\"$endpoint\"}[1m])) by (le, \"http.route\"))",
+          "legendFormat": "P95 - {{http.route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" },
+          "unit": "s"
+        }
+      }
+    },
+
+    {
+      "title": "Connection Pool: Active vs Free vs Stasis",
+      "description": "Active = connections currently in use by the app. Free = available in pool. Stasis = awaiting completion of an action (pool pressure indicator).",
+      "type": "timeseries",
+      "id": 2,
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.connections_in_use\"}",
+          "legendFormat": "In Use"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.connections_free\"}",
+          "legendFormat": "Free"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.connections_stasis\"}",
+          "legendFormat": "Stasis (pool pressure)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Stasis (pool pressure)" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "title": "Database Error Rate",
+      "type": "stat",
+      "id": 3,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "sum(rate({__name__=\"http.server.request.duration_seconds_count\", \"http.route\"=~\"$endpoint\", \"http.response.status_code\"=~\"5..\"}[1m])) or vector(0)",
+          "legendFormat": "Failures / sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "title": "Pool Exhaustion Risk",
+      "description": "Stasis connections > 0 means the pool is full and the app is queuing new requests. Reclaimed connections > 0 means SqlConnections are being GC'd without Close() being called — a resource leak.",
+      "type": "timeseries",
+      "id": 4,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.connections_stasis\"}",
+          "legendFormat": "Stasis (queued, blocked)"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.reclaimed_connections\"}",
+          "legendFormat": "Reclaimed by GC (leak indicator)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "bars", "fillOpacity": 60 },
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "title": "Physical Connection Churn (Hard Connects / Disconnects per sec)",
+      "description": "Hard connects/disconnects should be near zero under steady load — the pool should be reusing soft connections. A spike here means the pool is being exhausted and new physical connections are being opened.",
+      "type": "timeseries",
+      "id": 5,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.connections.hard_connects\"}",
+          "legendFormat": "Hard Connects / sec"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.connections.hard_disconnects\"}",
+          "legendFormat": "Hard Disconnects / sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Hard Disconnects / sec" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "title": "Pool Soft Connect/Disconnect Rate (Pool Reuse)",
+      "description": "Soft connects/disconnects represent normal pool checkout/return activity. A healthy pool has high soft rates and near-zero hard rates.",
+      "type": "timeseries",
+      "id": 6,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.soft_connects\"}",
+          "legendFormat": "Pool Checkouts / sec"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.soft_disconnects\"}",
+          "legendFormat": "Pool Returns / sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth" }
+        }
+      }
+    },
+
+    {
+      "title": "Pool Inventory Snapshot",
+      "description": "Total pooled connections managed by the driver vs non-pooled (should be 0 unless Pooling=false connections exist).",
+      "type": "timeseries",
+      "id": 7,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.pooled_connections\"}",
+          "legendFormat": "Pooled Connections"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.pool.non_pooled_connections\"}",
+          "legendFormat": "Non-Pooled Connections"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"sqlclient.connections.active_hard\"}",
+          "legendFormat": "Active Physical Connections"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line" }
+        }
+      }
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["sql-server", "opentelemetry", "dotnet"],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus" },
+        "definition": "label_values({__name__=\"http.server.request.duration_seconds_count\"}, \"http.route\")",
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "endpoint",
+        "options": [],
+        "query": "label_values({__name__=\"http.server.request.duration_seconds_count\"}, \"http.route\")",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "SQL Client & API Performance"
+}
+
