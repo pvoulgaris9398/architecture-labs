@@ -128,8 +128,8 @@ August 2, 2026.
 then navigate between a trace and its correlated logs.
 
 Implemented and documented in [the Grafana-to-Seq workflow](doc/grafana-seq-navigation.md). The
-Prometheus expressions and Seq deep-link route pass service-level validation; complete the short
-interactive dashboard check before treating the operator workflow as accepted.
+Prometheus expressions, stable one-day Seq deep link, dashboard filtering, and navigation into a
+correlated Seq trace and log were verified against the local stack on August 2, 2026.
 
 ## 8. Improve the dashboard investigation workflow
 
