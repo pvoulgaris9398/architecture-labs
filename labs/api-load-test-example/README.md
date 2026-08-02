@@ -18,6 +18,8 @@ and follow-up actions.
 layer-by-layer connectivity and signal-flow checks.
 [Grafana-to-Seq navigation](doc/grafana-seq-navigation.md) explains how dashboard variables and
 links carry bounded test context into detailed log and trace investigations.
+[The dashboard investigation guide](doc/dashboard-investigation.md) explains the failure domains,
+telemetry health panels, empty-state meanings, and the recommended investigation order.
 
 The API accepts W3C `traceparent` and `tracestate` context plus optional `X-Request-ID`,
 `X-Test-ID`, and `X-Test-Scenario` headers. Every response includes `X-Request-ID` and
@@ -194,6 +196,11 @@ The Grafana dashboard exposes `endpoint`, `test_id`, and `scenario` controls. It
 the selected test context, and the dashboard plus key latency, error, and SQL panels link to a Seq
 search for the same test ID and scenario over the last day. Server metrics deliberately do
 not carry test IDs; correlate them by the shared time window.
+
+The lower dashboard rows distinguish k6 transport failures, API 4xx/5xx responses, database
+operation errors, slow requests, Collector availability, exporter queue pressure, refused or
+dropped telemetry, and host free space. Logs and individual traces remain in Seq; Grafana provides
+explicit investigation launch panels instead of pretending Prometheus can query those records.
 
 Optional Windows host metrics expect windows_exporter on port 9182. If it is not installed,
 only that Prometheus target will show as unavailable; API metrics continue to work.

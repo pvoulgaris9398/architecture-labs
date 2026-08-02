@@ -133,15 +133,19 @@ correlated Seq trace and log were verified against the local stack on August 2, 
 
 ## 8. Improve the dashboard investigation workflow
 
-- [ ] Separate client-side k6 failures from API HTTP failures and database errors.
-- [ ] Add panels for slow requests, recent error logs, representative traces, collector health,
+- [x] Separate client-side k6 failures from API HTTP failures and database errors.
+- [x] Add panels for slow requests, recent error logs, representative traces, collector health,
   dropped telemetry, and storage pressure.
-- [ ] Make panel descriptions explain what each signal means and what to inspect next.
-- [ ] Keep dotted OpenTelemetry metric and label names correctly quoted in PromQL.
-- [ ] Ensure an empty panel clearly distinguishes “no errors” from “telemetry unavailable.”
+- [x] Make panel descriptions explain what each signal means and what to inspect next.
+- [x] Keep dotted OpenTelemetry metric and label names correctly quoted in PromQL.
+- [x] Ensure an empty panel clearly distinguishes “no errors” from “telemetry unavailable.”
 
 **Done when:** the dashboard tells a coherent story from load generation through API and database
 behavior and exposes telemetry-pipeline failures.
+
+Implemented and documented in [the dashboard investigation workflow](doc/dashboard-investigation.md).
+All PromQL must pass service validation and the lightweight 404 workflow must be checked in the
+reloaded Grafana dashboard before treating Step 8 as accepted.
 
 ## 9. Validate sampling, load impact, and failure behavior
 

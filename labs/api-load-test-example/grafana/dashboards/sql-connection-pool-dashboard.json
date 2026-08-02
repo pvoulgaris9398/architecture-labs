@@ -87,16 +87,21 @@
     },
 
     {
-      "title": "API HTTP 5xx Rate (Server-side)",
-      "description": "Responses returned with a 5xx status. TCP connection failures never reach the API and are shown separately by the k6 Client Failure Ratio panel.",
+      "title": "API HTTP Error Rate (Server-side)",
+      "description": "API responses split into client errors (4xx) and server errors (5xx). TCP connection failures never reach the API and appear only in the k6 Client Failure Ratio panel. Zero means no API errors only when API Scrape Availability is 1.",
       "type": "stat",
       "id": 3,
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
       "targets": [
         {
           "datasource": { "type": "prometheus" },
+          "expr": "sum(rate({__name__=\"http.server.request.duration_seconds_count\", \"http.route\"=~\"$endpoint\", \"http.response.status_code\"=~\"4..\"}[1m])) or vector(0)",
+          "legendFormat": "HTTP 4xx / sec"
+        },
+        {
+          "datasource": { "type": "prometheus" },
           "expr": "sum(rate({__name__=\"http.server.request.duration_seconds_count\", \"http.route\"=~\"$endpoint\", \"http.response.status_code\"=~\"5..\"}[1m])) or vector(0)",
-          "legendFormat": "Failures / sec"
+          "legendFormat": "HTTP 5xx / sec"
         }
       ],
       "fieldConfig": {
@@ -391,6 +396,166 @@
           "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
         }
       ]
+    },
+
+    {
+      "title": "Recent Warning and Error Logs (Seq)",
+      "description": "Prometheus does not store logs. Use this launch point to inspect structured warnings and errors for the selected test and scenario in Seq, including HTTP 4xx warnings.",
+      "type": "text",
+      "id": 15,
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 56 },
+      "options": {
+        "mode": "markdown",
+        "content": "### Detailed warnings and errors live in Seq\n\nSelect `test_id` and `scenario`, then use **Investigate warnings and errors in Seq** from this panel. Filter further with the reported `@TraceId`."
+      },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate warnings and errors in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F%20and%20%40Level%20in%20%5B%27Warning%27%2C%20%27Error%27%2C%20%27Fatal%27%5D&range=1d"
+        }
+      ]
+    },
+
+    {
+      "title": "Representative Traces (Seq)",
+      "description": "Prometheus aggregates requests and cannot list individual traces. Open sampled traces in Seq, then select a slow or failed event and use its Trace menu.",
+      "type": "text",
+      "id": 16,
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 56 },
+      "options": {
+        "mode": "markdown",
+        "content": "### Sampled traces live in Seq\n\nThe Collector retains all errors and requests at least 500 ms, plus samples of ordinary successes. Select a run, open Seq, and pivot from an event to its trace."
+      },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate traces in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+        }
+      ]
+    },
+
+    {
+      "title": "Slow API Request Rate (> 500 ms)",
+      "description": "Requests exceeding the Collector's 500 ms slow-trace threshold. Zero means no slow requests only when API Scrape Availability is 1; use the Seq trace panel to inspect examples.",
+      "type": "timeseries",
+      "id": 17,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 62 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "clamp_min(sum(rate({__name__=\"http.server.request.duration_seconds_count\", \"http.route\"=~\"$endpoint\"}[1m])) - sum(rate({__name__=\"http.server.request.duration_seconds_bucket\", \"http.route\"=~\"$endpoint\", le=\"0.5\"}[1m])), 0) or vector(0)",
+          "legendFormat": "Slow requests / sec"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0, "custom": { "drawStyle": "line", "fillOpacity": 25 } } },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate selected run in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+        }
+      ]
+    },
+
+    {
+      "title": "Database Operation Error Rate",
+      "description": "SQL client operations carrying a non-empty quoted \"error.type\" attribute. Zero means no database errors only when API scraping is healthy; use Seq to inspect the correlated exception and SQL span.",
+      "type": "timeseries",
+      "id": 18,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 62 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "sum by (\"error.type\") (rate({__name__=\"db.client.operation.duration_seconds_count\", \"error.type\"!=\"\"}[1m])) or vector(0)",
+          "legendFormat": "{{error.type}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0, "custom": { "drawStyle": "line", "fillOpacity": 25 } } },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Investigate selected run in Seq",
+          "url": "http://127.0.0.1:5341/#/events?filter=test_id%20%3D%20%2F${test_id:percentencode}%2F%20and%20scenario%20%3D%20%2F${scenario:percentencode}%2F&range=1d"
+        }
+      ]
+    },
+
+    {
+      "title": "Collector Availability and Seq Export Queue",
+      "description": "Collector scrape availability and Seq exporter queue utilization. Availability below 1 means telemetry visibility is degraded. A sustained queue increase means Seq export cannot keep up or Seq is unavailable.",
+      "type": "timeseries",
+      "id": 19,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 70 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "up{job=\"otel-collector\"}",
+          "legendFormat": "Collector available (1=yes)"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "100 * sum({__name__=\"otelcol_exporter_queue_size\", exporter=\"otlphttp/seq\"}) / clamp_min(sum({__name__=\"otelcol_exporter_queue_capacity\", exporter=\"otlphttp/seq\"}), 1)",
+          "legendFormat": "Seq export queue utilization %"
+        }
+      ],
+      "fieldConfig": { "defaults": { "min": 0, "custom": { "drawStyle": "line", "fillOpacity": 20 } } }
+    },
+
+    {
+      "title": "Collector Refused, Failed, or Prematurely Dropped Telemetry",
+      "description": "Pipeline-loss indicators, excluding deliberate tail-sampling decisions. Any value above zero needs investigation. Zero is trustworthy only while Collector availability is 1; the zero fallback must not conceal an unavailable Collector.",
+      "type": "timeseries",
+      "id": 20,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 70 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "(sum(rate(otelcol_receiver_refused_spans[1m])) or vector(0)) + (sum(rate(otelcol_receiver_refused_log_records[1m])) or vector(0)) + (sum(rate(otelcol_receiver_refused_metric_points[1m])) or vector(0))",
+          "legendFormat": "Receiver refused / sec"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "(sum(rate(otelcol_receiver_failed_spans[1m])) or vector(0)) + (sum(rate(otelcol_receiver_failed_log_records[1m])) or vector(0)) + (sum(rate(otelcol_receiver_failed_metric_points[1m])) or vector(0))",
+          "legendFormat": "Receiver failed / sec"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "sum(rate({__name__=\"otelcol_processor_tail_sampling_sampling_trace_dropped_too_early\"}[1m])) or vector(0)",
+          "legendFormat": "Trace dropped before decision / sec"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0, "custom": { "drawStyle": "bars", "fillOpacity": 40 } } }
+    },
+
+    {
+      "title": "Host Storage Free (C:)",
+      "description": "Free space on the Windows volume that normally backs Docker Desktop data. Keep at least 10 GiB free per the lab guardrail. No data means optional windows_exporter is unavailable—not that storage is healthy. Seq and Prometheus volume usage must still be checked directly during Step 9.",
+      "type": "timeseries",
+      "id": 21,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 78 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "{__name__=\"windows_logical_disk_free_bytes\", volume=\"C:\"}",
+          "legendFormat": "C: free bytes"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": { "drawStyle": "line", "fillOpacity": 20 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 10737418240 }
+            ]
+          }
+        }
+      }
     }
   ],
   "refresh": "5s",
