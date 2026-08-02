@@ -10,14 +10,17 @@ future Loki and Tempo comparison.
 
 ## 1. Define correlation and retention conventions
 
-- [ ] Document the fields used across the stack: `trace_id`, `span_id`, `request_id`, `test_id`,
+- [x] Document the fields used across the stack: `trace_id`, `span_id`, `request_id`, `test_id`,
   `scenario`, HTTP route, and status code.
-- [ ] Define which fields may be Prometheus labels; never use per-request or per-trace identifiers
+- [x] Define which fields may be Prometheus labels; never use per-request or per-trace identifiers
   as metric labels because their cardinality is unbounded.
-- [ ] Choose local retention limits for metrics, logs, and traces, including disk-size expectations
+- [x] Choose local retention limits for metrics, logs, and traces, including disk-size expectations
   and a safe cleanup procedure.
-- [ ] Define an initial trace-sampling policy: retain all errors and unusually slow requests while
+- [x] Define an initial trace-sampling policy: retain all errors and unusually slow requests while
   sampling ordinary successful requests.
+
+Decisions and operating limits are recorded in
+[the observability conventions](doc/observability-conventions.md).
 
 **Done when:** the naming, cardinality, sampling, and retention decisions are documented before new
 telemetry storage is introduced.

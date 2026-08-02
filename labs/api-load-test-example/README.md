@@ -10,6 +10,8 @@ and Grafana locally with Docker Compose and uses k6 to generate traffic.
 
 See [next-steps.md](next-steps.md) for the ordered checklist to add correlated logs, traces,
 request context, Grafana navigation, and an analysis runbook.
+[Observability conventions](doc/observability-conventions.md) define the correlation fields,
+cardinality rules, sampling policy, retention limits, and cleanup safeguards for that work.
 
 ## Prerequisites
 
