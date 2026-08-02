@@ -8,6 +8,9 @@ This project demonstrates how API latency, SQL query performance, and ADO.NET co
 behavior interact under concurrent load. It runs an ASP.NET Core API, SQL Server, Prometheus,
 and Grafana locally with Docker Compose and uses k6 to generate traffic.
 
+See [next-steps.md](next-steps.md) for the ordered checklist to add correlated logs, traces,
+request context, Grafana navigation, and an analysis runbook.
+
 ## Prerequisites
 
 - Docker Desktop with Docker Compose
