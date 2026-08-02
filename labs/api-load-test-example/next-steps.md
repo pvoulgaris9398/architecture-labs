@@ -43,13 +43,17 @@ log entries and server trace.
 
 ## 3. Add structured application logging
 
-- [ ] Emit JSON logs with timestamp, severity, message, exception, route, status, duration, and the
+- [x] Emit JSON logs with timestamp, severity, message, exception, route, status, duration, and the
   agreed correlation fields.
-- [ ] Log request failures and unexpected exceptions without recording credentials, connection
+- [x] Log request failures and unexpected exceptions without recording credentials, connection
   strings, or sensitive request data.
-- [ ] Add focused database-operation logs that preserve the active trace context.
-- [ ] Avoid per-request informational logging that would distort the load experiment unless it is
+- [x] Add focused database-operation logs that preserve the active trace context.
+- [x] Avoid per-request informational logging that would distort the load experiment unless it is
   explicitly enabled for diagnostics.
+
+Implemented with native JSON console logging, correlation scopes, request failure logging, and
+database-operation error logging. Successful and slow-request records are opt-in through the
+documented `LOG_SUCCESSFUL_REQUESTS` and `LOG_SLOW_REQUESTS` settings.
 
 **Done when:** error logs are machine-queryable and a `trace_id` search finds every relevant log
 entry for one failed request.

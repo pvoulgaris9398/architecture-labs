@@ -8,6 +8,13 @@ Activity.DefaultIdFormat = ActivityIdFormat.W3C;
 Activity.ForceDefaultIdFormat = true;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
+    options.UseUtcTimestamp = true;
+});
 
 // Connection strings are read from environment variables:
 //   ConnectionStrings__Master   → used by the original endpoints (targets master DB)
@@ -31,6 +38,7 @@ builder.AddAppTelemetryV2(serviceName);
 
 var app = builder.Build();
 app.UseMiddleware<RequestCorrelationMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
 
@@ -48,10 +56,14 @@ await SeedDatabaseAsync(scanConnString, app.Logger);
 // Endpoint Route 1
 app.MapGet(
     "/v1/data-endpoint",
-    async () =>
+    async (ILogger<DatabaseOperations> logger) =>
     {
         using var connection = new SqlConnection(connString);
-        var result = await connection.QueryAsync<int>("WAITFOR DELAY '00:00:00.100'; SELECT 1;");
+        var result = await DatabaseOperationLogging.ExecuteAsync(
+            logger,
+            "delayed-data-query",
+            () => connection.QueryAsync<int>("WAITFOR DELAY '00:00:00.100'; SELECT 1;")
+        );
         return Results.Ok(new { status = "Success", data = result });
     }
 );
@@ -59,12 +71,15 @@ app.MapGet(
 // Endpoint Route 2
 app.MapGet(
     "/v1/admin-report",
-    async () =>
+    async (ILogger<DatabaseOperations> logger) =>
     {
         using (var connection = new SqlConnection(connString))
         {
-            var result = await connection.QueryAsync<int>(
-                "WAITFOR DELAY '00:00:00.050'; SELECT 2;"
+            var result = await DatabaseOperationLogging.ExecuteAsync(
+                logger,
+                "delayed-admin-query",
+                () =>
+                    connection.QueryAsync<int>("WAITFOR DELAY '00:00:00.050'; SELECT 2;")
             );
             return Results.Ok(new { status = "Admin Success", data = result });
         }
@@ -79,15 +94,20 @@ app.MapGet(
 // CustomerId index it performs a table scan; after POST /v1/add-index it uses the index.
 app.MapGet(
     "/v1/orders/by-customer",
-    async () =>
+    async (ILogger<DatabaseOperations> logger) =>
     {
         // Rotate through customer IDs so each request scans for a different customer,
         // preventing SQL Server from short-circuiting via plan caching tricks.
         var customerId = Random.Shared.Next(1, 10001);
         using var connection = new SqlConnection(scanConnString);
-        var orders = await connection.QueryAsync<Order>(
-            "SELECT OrderId, CustomerId, OrderDate, Status, Amount FROM Orders WHERE CustomerId = @CustomerId",
-            new { CustomerId = customerId }
+        var orders = await DatabaseOperationLogging.ExecuteAsync(
+            logger,
+            "orders-by-customer",
+            () =>
+                connection.QueryAsync<Order>(
+                    "SELECT OrderId, CustomerId, OrderDate, Status, Amount FROM Orders WHERE CustomerId = @CustomerId",
+                    new { CustomerId = customerId }
+                )
         );
         return Results.Ok(new { customerId, orderCount = orders.Count() });
     }
@@ -97,20 +117,25 @@ app.MapGet(
 // Call this between load test runs: POST http://127.0.0.1:18080/v1/add-index
 app.MapPost(
     "/v1/add-index",
-    async () =>
+    async (ILogger<DatabaseOperations> logger) =>
     {
         using var connection = new SqlConnection(scanConnString);
-        await connection.ExecuteAsync(
-            """
-            IF NOT EXISTS (
-                SELECT 1 FROM sys.indexes
-                WHERE name = 'IX_Orders_CustomerId' AND object_id = OBJECT_ID('Orders')
-            )
-            BEGIN
-                CREATE NONCLUSTERED INDEX IX_Orders_CustomerId ON Orders (CustomerId)
-                INCLUDE (OrderDate, Status, Amount);
-            END
-            """
+        await DatabaseOperationLogging.ExecuteAsync(
+            logger,
+            "add-orders-customer-index",
+            () =>
+                connection.ExecuteAsync(
+                    """
+                    IF NOT EXISTS (
+                        SELECT 1 FROM sys.indexes
+                        WHERE name = 'IX_Orders_CustomerId' AND object_id = OBJECT_ID('Orders')
+                    )
+                    BEGIN
+                        CREATE NONCLUSTERED INDEX IX_Orders_CustomerId ON Orders (CustomerId)
+                        INCLUDE (OrderDate, Status, Amount);
+                    END
+                    """
+                )
         );
         return Results.Ok(new { status = "Index created", index = "IX_Orders_CustomerId" });
     }
@@ -120,19 +145,24 @@ app.MapPost(
 // Call this to reset: POST http://127.0.0.1:18080/v1/drop-index
 app.MapPost(
     "/v1/drop-index",
-    async () =>
+    async (ILogger<DatabaseOperations> logger) =>
     {
         using var connection = new SqlConnection(scanConnString);
-        await connection.ExecuteAsync(
-            """
-            IF EXISTS (
-                SELECT 1 FROM sys.indexes
-                WHERE name = 'IX_Orders_CustomerId' AND object_id = OBJECT_ID('Orders')
-            )
-            BEGIN
-                DROP INDEX IX_Orders_CustomerId ON Orders;
-            END
-            """
+        await DatabaseOperationLogging.ExecuteAsync(
+            logger,
+            "drop-orders-customer-index",
+            () =>
+                connection.ExecuteAsync(
+                    """
+                    IF EXISTS (
+                        SELECT 1 FROM sys.indexes
+                        WHERE name = 'IX_Orders_CustomerId' AND object_id = OBJECT_ID('Orders')
+                    )
+                    BEGIN
+                        DROP INDEX IX_Orders_CustomerId ON Orders;
+                    END
+                    """
+                )
         );
         return Results.Ok(new { status = "Index dropped", index = "IX_Orders_CustomerId" });
     }

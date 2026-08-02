@@ -18,6 +18,21 @@ The API accepts W3C `traceparent` and `tracestate` context plus optional `X-Requ
 `X-Trace-ID`; valid test context is echoed for diagnostics. See the conventions for validation and
 cardinality rules.
 
+Application logs are emitted as structured JSON. HTTP client/server errors and database-operation
+failures are always logged with route, status, duration, and the active correlation scope. To avoid
+distorting load results, successful and slow-request records are disabled by default. Enable them
+temporarily in `.env` when diagnosing a focused run:
+
+```bash
+LOG_SUCCESSFUL_REQUESTS=true
+LOG_SLOW_REQUESTS=true
+SLOW_REQUEST_THRESHOLD_MS=500
+docker compose up -d --build api-service
+docker compose logs -f api-service
+```
+
+Do not enable successful-request logging for routine high-volume load tests.
+
 ## Prerequisites
 
 - Docker Desktop with Docker Compose

@@ -16,6 +16,9 @@ services:
       ConnectionStrings__Master: "Server=db-server;Database=master;User Id=sa;Password=${MSSQL_SA_PASSWORD};Max Pool Size=150;TrustServerCertificate=True;"
       ConnectionStrings__LoadTest: "Server=db-server;Database=LoadTestDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};Max Pool Size=150;TrustServerCertificate=True;"
       DOTNET_Metrics_Microsoft_Data_SqlClient: "true"
+      Diagnostics__LogSuccessfulRequests: ${LOG_SUCCESSFUL_REQUESTS:-false}
+      Diagnostics__LogSlowRequests: ${LOG_SLOW_REQUESTS:-false}
+      Diagnostics__SlowRequestThresholdMs: ${SLOW_REQUEST_THRESHOLD_MS:-500}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
     ports:
