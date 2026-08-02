@@ -27,13 +27,16 @@ telemetry storage is introduced.
 
 ## 2. Add API request correlation
 
-- [ ] Accept and propagate the W3C `traceparent` and `tracestate` headers.
-- [ ] Generate a request identifier when the caller does not supply one.
-- [ ] Accept bounded `test_id` and `scenario` metadata from k6 without treating arbitrary input as
+- [x] Accept and propagate the W3C `traceparent` and `tracestate` headers.
+- [x] Generate a request identifier when the caller does not supply one.
+- [x] Accept bounded `test_id` and `scenario` metadata from k6 without treating arbitrary input as
   a metric label.
-- [ ] Return the request and trace identifiers in response headers so a failing caller can record
+- [x] Return the request and trace identifiers in response headers so a failing caller can record
   them.
-- [ ] Add correlation values to the ASP.NET Core logging scope for the full request lifetime.
+- [x] Add correlation values to the ASP.NET Core logging scope for the full request lifetime.
+
+Implemented by `csharp-api/RequestCorrelationMiddleware.cs` using the contract in
+[the observability conventions](doc/observability-conventions.md).
 
 **Done when:** a single API response can be matched to the corresponding structured application
 log entries and server trace.

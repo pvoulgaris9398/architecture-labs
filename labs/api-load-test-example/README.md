@@ -13,6 +13,11 @@ request context, Grafana navigation, and an analysis runbook.
 [Observability conventions](doc/observability-conventions.md) define the correlation fields,
 cardinality rules, sampling policy, retention limits, and cleanup safeguards for that work.
 
+The API accepts W3C `traceparent` and `tracestate` context plus optional `X-Request-ID`,
+`X-Test-ID`, and `X-Test-Scenario` headers. Every response includes `X-Request-ID` and
+`X-Trace-ID`; valid test context is echoed for diagnostics. See the conventions for validation and
+cardinality rules.
+
 ## Prerequisites
 
 - Docker Desktop with Docker Compose

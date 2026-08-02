@@ -1,8 +1,12 @@
+using System.Diagnostics;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PoolMonitoringApi;
 
 const string serviceName = "pool-monitoring-api";
+Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+Activity.ForceDefaultIdFormat = true;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Connection strings are read from environment variables:
@@ -26,6 +30,7 @@ var scanConnString =
 builder.AddAppTelemetryV2(serviceName);
 
 var app = builder.Build();
+app.UseMiddleware<RequestCorrelationMiddleware>();
 app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
 
