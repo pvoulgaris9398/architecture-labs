@@ -78,6 +78,18 @@ exporters:
       num_consumers: 2
       queue_size: 512
       block_on_overflow: false
+  otlphttp/seq:
+    endpoint: http://seq:5341/ingest/otlp
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 1024
+      block_on_overflow: false
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 5m
 
 service:
   extensions: [health_check]
@@ -96,7 +108,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, tail_sampling, batch]
-      exporters: [debug]
+      exporters: [otlphttp/seq]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
@@ -104,4 +116,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [debug]
+      exporters: [otlphttp/seq]

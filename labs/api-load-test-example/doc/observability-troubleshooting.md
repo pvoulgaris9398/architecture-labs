@@ -14,7 +14,7 @@ k6 -- remote write ------------------------------> Prometheus --> Grafana
                  +-- OTLP logs, traces, metrics --> Collector
                                                     |       |
                                                     |       +-- /metrics --> Prometheus
-                                                    +-- debug output now; Seq in Step 5
+                                                    +-- logs and sampled traces --> Seq
 ```
 
 The paths are independent. For example, the API and its Prometheus scrape can remain healthy while
@@ -24,18 +24,17 @@ the Collector is stopped, and k6 metrics can reach Prometheus even when no API t
 
 ```bash
 docker compose ps
-docker compose logs --tail 100 api-service otel-collector prometheus grafana
+docker compose logs --tail 100 api-service otel-collector seq prometheus grafana
 ```
 
 Expected:
 
-- `api-service`, `otel-collector`, `prometheus`, and `grafana` are running.
+- `api-service`, `otel-collector`, `seq`, `prometheus`, and `grafana` are running.
 - API logs contain `Database seeding complete.` after initial startup.
 - Collector logs do not contain configuration parsing or component startup failures.
 - Prometheus logs do not show repeated scrape or remote-write receiver errors.
 
-Container output is currently the only log interface. Grafana has a Prometheus data source but no
-log data source. Step 5 adds Seq as the searchable log and trace UI.
+Seq is the searchable log and trace interface. Grafana continues to use Prometheus for metrics.
 
 ## 2. Verify host endpoints explicitly over IPv4
 
@@ -44,6 +43,7 @@ curl --fail --show-error http://127.0.0.1:18080/health
 curl --fail --show-error http://127.0.0.1:18080/metrics >/dev/null
 curl --fail --show-error http://127.0.0.1:13133
 curl --fail --show-error http://127.0.0.1:18888/metrics >/dev/null
+curl --fail --show-error http://127.0.0.1:5341/health
 curl --fail --show-error http://127.0.0.1:9090/-/ready
 curl --fail --show-error http://127.0.0.1:3000/api/health
 ```
@@ -124,7 +124,7 @@ curl -i \
   http://127.0.0.1:18080/v1/not-found
 
 docker compose logs --tail 100 api-service
-docker compose logs --tail 100 otel-collector
+docker compose logs --tail 100 otel-collector seq
 ```
 
 Expected:
@@ -132,12 +132,28 @@ Expected:
 - The API response is 404 and includes correlation response headers.
 - API JSON output contains a warning with route, status, duration, and correlation scope.
 - Collector accepted-span and accepted-log counters increase.
-- Collector `basic` debug output may show only batch summaries, not the trace or request ID.
+- Seq receives the log and sampled trace asynchronously; allow several seconds for batching and
+  tail-sampling decisions.
 
-Until Seq is added, use the API container output to inspect individual log fields and Collector
-self-metrics to prove pipeline delivery.
+Copy `X-Trace-ID` from the response, open `http://127.0.0.1:5341`, and search:
 
-## 6. Temporarily increase diagnostic logging
+```sql
+@TraceId = 'paste-the-response-trace-id-here'
+```
+
+If the API log exists but Seq has no matching event, inspect Collector accepted records, exporter
+queue metrics, send failures, and both container logs. See `seq.md` for detailed investigation and
+retention setup.
+
+## 6. Verify Seq storage and retention
+
+Open **Data > Storage > Retention** and confirm the required **All events / 14 days** policy exists.
+In Seq's Events screen, constrain the time range to the current diagnostic window and verify that
+`@Resource['service.name'] = 'PoolMonitoringApi'` returns events. A healthy `/health` endpoint only
+proves Seq can serve requests; it does not prove the Collector exported records or that retention
+was configured.
+
+## 7. Temporarily increase diagnostic logging
 
 For a short, low-volume diagnostic session, set these values in `.env`:
 
@@ -160,7 +176,7 @@ To inspect individual telemetry records at the Collector, temporarily change the
 before any load test. Detailed Collector output and successful-request logging can generate an
 enormous amount of I/O and materially distort results.
 
-## 7. Verify k6 remote write independently
+## 8. Verify k6 remote write independently
 
 Run one iteration rather than the normal load profile:
 
@@ -180,7 +196,7 @@ k6 client metrics do not appear at the API's `/metrics` endpoint. `run-k6.sh` se
 to Prometheus at `/api/v1/write`. If terminal results appear but Prometheus has no `k6_*` series,
 verify that the wrapper—not a direct `k6 run` command—was used and inspect Prometheus logs.
 
-## 8. Verify Grafana
+## 9. Verify Grafana
 
 ```bash
 curl --fail --show-error http://127.0.0.1:3000/api/health
@@ -197,7 +213,7 @@ An empty panel can mean no matching events, a sampling decision, an incorrect ti
 telemetry failure. Check `up`, raw metric names, and Collector accepted/refused counters before
 concluding that the application emitted nothing.
 
-## 9. Verify Collector outage isolation
+## 10. Verify Collector and Seq outage isolation
 
 ```bash
 docker compose stop otel-collector
@@ -211,6 +227,18 @@ The API health and Prometheus endpoint must remain available while the Collector
 .NET exporter uses bounded in-memory retry; telemetry can be dropped when the outage exceeds queue
 or retry capacity. That loss is preferable to blocking application requests.
 
+Repeat the isolation check for Seq:
+
+```bash
+docker compose stop seq
+curl --fail http://127.0.0.1:18080/health
+docker compose start seq
+curl --fail http://127.0.0.1:5341/health
+```
+
+The Collector retries for at most five minutes with a bounded queue. A longer Seq outage can lose
+logs and traces, while API requests and Prometheus metrics continue.
+
 ## Symptom guide
 
 | Symptom | Most likely layer | First checks |
@@ -220,6 +248,7 @@ or retry capacity. That loss is preferable to blocking application requests.
 | API healthy, Grafana empty | Prometheus scrape/query/time range | Prometheus targets, `up`, raw metric names |
 | API logs exist, Collector counters stay flat | API OTLP endpoint or Collector receiver | API/Collector logs, ports 4318 and 14318, Collector health |
 | Collector counters rise, console shows nothing | Sampling or debug-exporter rate limit | Expected-silence notes, tail-sampling counters |
+| Collector receives data, Seq is empty | Collector-to-Seq exporter or time filter | Seq health, exporter failures/queue, Collector and Seq logs |
 | k6 terminal works, no `k6_*` metrics | Remote-write path | Use `run-k6.sh`, Prometheus logs, port 9090 |
 | Collector down, API also unavailable | Unintended runtime coupling | API logs and Compose configuration; API must not depend on Collector health |
 | Only Windows host target is down | Optional windows_exporter | Install/start exporter or ignore that optional target |
@@ -238,4 +267,3 @@ When asking for help, preserve these non-secret details:
 
 Do not post `.env`, connection strings, passwords, request bodies, SQL parameters, or complete
 Docker inspection output that may contain environment secrets.
-

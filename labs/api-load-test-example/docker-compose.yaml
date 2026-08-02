@@ -32,6 +32,17 @@ services:
       db-server:
         condition: service_healthy
 
+  seq:
+    image: ${SEQ_IMAGE:-datalust/seq:2026.1.17004-x64}
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_ADMIN_USER:-admin}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:?Set SEQ_ADMIN_PASSWORD in .env}
+    volumes:
+      - seq-data:/data
+    ports:
+      - "127.0.0.1:${SEQ_HOST_PORT:-5341}:80"
+
   otel-collector:
     image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.157.0}
     command:
@@ -44,6 +55,8 @@ services:
       - "${OTEL_HEALTH_HOST_PORT:-13133}:13133"
       - "${OTEL_METRICS_HOST_PORT:-18888}:8888"
     mem_limit: 512m
+    depends_on:
+      - seq
 
   prometheus:
     image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.5.5}
@@ -82,3 +95,4 @@ services:
 
 volumes:
   prometheus-data:
+  seq-data:

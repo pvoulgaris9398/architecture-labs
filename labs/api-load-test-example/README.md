@@ -6,7 +6,7 @@
 
 This project demonstrates how API latency, SQL query performance, and ADO.NET connection-pool
 behavior interact under concurrent load. It runs an ASP.NET Core API, SQL Server, an OpenTelemetry
-Collector, Prometheus, and Grafana locally with Docker Compose and uses k6 to generate traffic.
+Collector, Seq, Prometheus, and Grafana locally with Docker Compose and uses k6 to generate traffic.
 
 See [next-steps.md](next-steps.md) for the ordered checklist to add correlated logs, traces,
 request context, Grafana navigation, and an analysis runbook.
@@ -82,10 +82,15 @@ with `SETUP_TIMEOUT` if the readiness window is increased beyond that.
 | API Prometheus metrics | http://127.0.0.1:18080/metrics |
 | Collector health | http://127.0.0.1:13133 |
 | Collector self-metrics | http://127.0.0.1:18888/metrics |
+| Seq logs and traces | http://127.0.0.1:5341 |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
-Sign in to Grafana using `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` from `.env`.
+Sign in to Grafana using `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` from `.env`. Sign in to
+Seq using `SEQ_ADMIN_USER` and `SEQ_ADMIN_PASSWORD`. Seq uses the proprietary free Individual
+license in this local lab; its EULA is accepted by the Compose configuration and only one person
+may access the web interface. See [the Seq operating notes](doc/seq.md) before the first run,
+including the required 14-day retention-policy setup.
 
 ## Run the connection-pool test
 
@@ -159,10 +164,11 @@ and SqlClient metrics, including custom gauges bridged from all 16 SqlClient Eve
 
 The API sends traces, logs, and an additional OTLP metric stream to the Collector asynchronously;
 Prometheus continues scraping the API directly, so existing metric names and dashboards do not
-depend on the Collector. The Collector currently uses a rate-limited debug exporter as a temporary
-validation sink. Step 5 will replace that sink with Seq for durable logs and traces. See the
-[Collector operating notes](doc/opentelemetry-collector.md) for sampling, queue, health, outage,
-and troubleshooting details.
+depend on the Collector. The Collector exports sampled traces and structured logs to persisted Seq
+storage over OTLP/HTTP. Its rate-limited debug exporter remains only on the duplicate OTLP metrics
+pipeline because Prometheus continues to scrape the API directly. See the
+[Collector operating notes](doc/opentelemetry-collector.md) and [Seq operating notes](doc/seq.md)
+for sampling, queues, retention, health, outage, and investigation details.
 
 Optional Windows host metrics expect windows_exporter on port 9182. If it is not installed,
 only that Prometheus target will show as unavailable; API metrics continue to work.
@@ -194,5 +200,5 @@ This stack is intended for isolated local experimentation. SQL Server is exposed
 the API management endpoints are unauthenticated, and TLS certificate validation is disabled for
 the database connection. Do not deploy this configuration to a shared or production environment.
 
-Container versions are configured in `.env.example` rather than using mutable Prometheus and
-Grafana `latest` tags. Update those values deliberately when testing a newer release.
+Container versions are configured in `.env.example` rather than using mutable tags. Update those
+values deliberately when testing a newer release.

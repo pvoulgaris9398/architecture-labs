@@ -68,8 +68,8 @@ entry for one failed request.
   channel exists, following repository policy.
 
 Implemented with the pinned v0.157.0 contrib distribution and documented in
-[the Collector operating notes](doc/opentelemetry-collector.md). The debug exporter is a temporary
-validation sink; Step 5 will add Seq as the durable log and trace backend.
+[the Collector operating notes](doc/opentelemetry-collector.md). Seq now stores logs and sampled
+traces; the rate-limited debug exporter remains only on the duplicate OTLP metrics pipeline.
 
 - [x] Run the documented health, self-metrics, ingestion, and Collector-outage smoke checks against
   the local Docker stack.
@@ -79,10 +79,11 @@ the API from serving requests.
 
 ## 5. Add Seq log and trace storage
 
-- [ ] Add a locally persisted Seq service with bounded retention.
-- [ ] Pin the image according to repository policy, explicitly accept the Seq EULA, and document
+- [x] Add a locally persisted Seq service and document the required 14-day all-events retention
+  policy.
+- [x] Pin the image according to repository policy, explicitly accept the Seq EULA, and document
   the single-user limitation of the free Individual license.
-- [ ] Export structured API logs and API and SQL client spans from the Collector to Seq over OTLP.
+- [x] Export structured API logs and API and SQL client spans from the Collector to Seq over OTLP.
 - [ ] Verify traces include HTTP route, response status, SQL operation, duration, and error status
   without exposing SQL credentials or sensitive statement parameters.
 - [ ] Confirm parent-child relationships connect the inbound HTTP request to its database work.
@@ -90,6 +91,10 @@ the API from serving requests.
 
 **Done when:** a known request can be found by `trace_id` in Seq and its structured logs, API span,
 and database timings can be investigated together.
+
+Implemented with pinned Seq 2026.1.17004-x64, a persisted `seq-data` volume, and a bounded OTLP/HTTP
+exporter. Complete the remaining runtime checks and create the documented retention policy in the
+local Seq UI before marking Step 5 done. See [the Seq operating notes](doc/seq.md).
 
 ## 6. Propagate test context from k6
 

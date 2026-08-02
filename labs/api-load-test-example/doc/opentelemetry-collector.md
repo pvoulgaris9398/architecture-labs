@@ -7,9 +7,9 @@ exports traces, logs, and metrics to it over OTLP/HTTP. Prometheus still scrapes
 `/metrics` endpoint directly, so a Collector outage does not remove the existing server metrics or
 stop the API from serving requests.
 
-The Collector currently sends telemetry to a rate-limited debug exporter. This proves ingestion,
-processing, sampling, batching, and queue behavior before Step 5 adds Seq as the durable log and
-trace backend. Debug output is not retained and is not an experiment result.
+The Collector sends structured logs and sampled traces to Seq over OTLP/HTTP. The rate-limited
+debug exporter remains only on the duplicate OTLP metrics pipeline as a lightweight diagnostic;
+Prometheus continues to scrape the API directly for dashboard metrics.
 
 ## Version decision
 
@@ -27,14 +27,14 @@ References:
 ## Signal flow
 
 ```text
-.NET API -- OTLP/HTTP --> Collector -- temporary debug exporter
+.NET API -- OTLP/HTTP --> Collector -- OTLP/HTTP --> Seq
     |
     +-- /metrics --> Prometheus --> Grafana
 
 Collector /metrics --> Prometheus --> Grafana
 ```
 
-The API SDK and Collector debug-exporter queues are bounded. OTLP export happens asynchronously;
+The API SDK and Collector exporter queues are bounded. OTLP export happens asynchronously;
 the .NET exporter uses its in-memory transient retry mode. When the Collector is unavailable, the
 SDK retries or drops telemetry according to its bounded in-memory capacity rather than blocking
 request processing. Telemetry loss during an outage is expected and must be visible in SDK logs
@@ -53,10 +53,11 @@ The Collector applies these processors in order:
    - retain 10% of other successful traces.
 3. Batching with a target of 1,024 records and a maximum batch of 2,048.
 
-Logs and metrics use the memory limiter and batch processor but are not sampled. The debug exporter
-has a bounded 512-batch queue and two consumers. Because it is a local diagnostic sink, it does not
-have a network retry policy. Step 5 must configure bounded retry behavior on the Collector-to-Seq
-network exporter.
+Logs and metrics use the memory limiter and batch processor but are not sampled. The Seq exporter
+has a bounded 1,024-batch queue with two consumers and retries transient failures for no more than
+five minutes, using intervals from one to 30 seconds. If Seq remains unavailable after those bounds
+are exhausted, telemetry is dropped instead of blocking the API or growing memory without limit.
+The metrics-only debug exporter has a separate bounded 512-batch queue and no network retry.
 
 ## Endpoints
 
@@ -68,6 +69,8 @@ network exporter.
 | Internal Prometheus metrics | `otel-collector:8888/metrics` | `127.0.0.1:18888/metrics` |
 
 Host ports are configurable in `.env`; internal Compose endpoints remain unchanged.
+The Collector exports logs and traces to Seq's internal ingestion endpoint at
+`http://seq:5341/ingest/otlp`; the Collector appends `/v1/logs` or `/v1/traces` automatically.
 
 ## Start and verify
 
@@ -76,6 +79,7 @@ docker compose up -d --build
 curl --fail http://127.0.0.1:13133
 curl --fail http://127.0.0.1:18888/metrics
 curl --fail http://127.0.0.1:18080/health
+curl --fail http://127.0.0.1:5341/health
 docker compose logs --tail 100 otel-collector
 ```
 
@@ -104,5 +108,5 @@ The API health request must succeed while the Collector is stopped. Some telemet
 during the outage may be dropped after in-memory retries, bounded queues, or export timeouts are
 exhausted. Do not use an unbounded queue to conceal an unavailable backend.
 
-For end-to-end API, Collector, Prometheus, k6, and Grafana diagnosis, use the
+For end-to-end API, Collector, Seq, Prometheus, k6, and Grafana diagnosis, use the
 [observability troubleshooting runbook](observability-troubleshooting.md).
