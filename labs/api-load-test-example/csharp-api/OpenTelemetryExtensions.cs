@@ -63,9 +63,9 @@ public static class OpenTelemetryExtensions
         string serviceName
     )
     {
-        var otlpEnabled = !string.IsNullOrWhiteSpace(
-            builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]
-        );
+        var otlpEnabled =
+            builder.Configuration.GetValue("Telemetry:OtlpEnabled", true)
+            && !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
         // 1. Define shared resource metadata
         var resourceBuilder = ResourceBuilder
@@ -373,4 +373,3 @@ internal sealed class SqlClientEventBridge : EventListener, IHostedService
         _meter.Dispose();
     }
 }
-

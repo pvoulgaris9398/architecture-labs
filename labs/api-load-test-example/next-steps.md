@@ -149,6 +149,10 @@ reloaded Grafana dashboard before treating Step 8 as accepted.
 
 ## 9. Validate sampling, load impact, and failure behavior
 
+The repeatable disabled-versus-enabled comparison harness is documented in
+[the observability validation guide](doc/observability-validation.md). Full load runs and the
+remaining evidence are intentionally still pending.
+
 - [ ] Compare baseline throughput and latency with telemetry disabled and enabled.
 - [ ] Measure log and trace volume during both load-test scenarios.
 - [ ] Verify all errors and slow traces survive the sampling policy.
