@@ -7,7 +7,10 @@ procedure.
 
 ## Recorded runs
 
+- [2026-08-02 OTLP export overhead comparison](2026-08-02-telemetry-overhead.md) - three paired
+  connection-pool runs per mode found no exporter penalty distinguishable from run-to-run
+  variation.
+
 - [2026-08-02 initial table-scan versus index comparison](2026-08-02-table-scan-vs-index.md) —
   exploratory single-machine comparison; needs controlled repetition and corrected SqlClient rate
   normalization.
-

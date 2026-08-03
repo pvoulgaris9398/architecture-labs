@@ -50,3 +50,7 @@ values visible so variance is not hidden by an average.
 This procedure covers only the first Step 9 item. Telemetry volume, sampling survival, independent
 backend outages, and retention enforcement still require separate evidence before Step 9 can be
 marked complete.
+
+The August 2, 2026 connection-pool execution and its environment, observations, interpretation,
+and limitations are recorded in
+[the OTLP export overhead results](../results/2026-08-02-telemetry-overhead.md).

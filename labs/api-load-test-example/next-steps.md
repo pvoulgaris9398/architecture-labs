@@ -153,7 +153,7 @@ The repeatable disabled-versus-enabled comparison harness is documented in
 [the observability validation guide](doc/observability-validation.md). Full load runs and the
 remaining evidence are intentionally still pending.
 
-- [ ] Compare baseline throughput and latency with telemetry disabled and enabled.
+- [x] Compare baseline throughput and latency with telemetry disabled and enabled.
 - [ ] Measure log and trace volume during both load-test scenarios.
 - [ ] Verify all errors and slow traces survive the sampling policy.
 - [ ] Test Collector, Seq, and Prometheus outages independently and document their effects.
@@ -161,6 +161,11 @@ remaining evidence are intentionally still pending.
 
 **Done when:** the cost and limitations of the observability stack are measured and documented, not
 assumed.
+
+The connection-pool comparison is recorded in
+[the OTLP export overhead results](results/2026-08-02-telemetry-overhead.md). It found no exporter
+penalty distinguishable from run-to-run variation on the documented test machine. Step 9 remains
+in progress until the remaining volume, sampling, outage, and retention checks are complete.
 
 ## 10. Add an analysis runbook
 
