@@ -7,6 +7,10 @@ procedure.
 
 ## Recorded runs
 
+- [2026-08-03 telemetry-volume table-scan comparison](2026-08-03-telemetry-volume.md) - one valid
+  run per index state found stable receiver spans per request but fewer Seq-exported spans per
+  request with the index; short-window disk growth remains exploratory.
+
 - [2026-08-02 OTLP export overhead comparison](2026-08-02-telemetry-overhead.md) - three paired
   connection-pool runs per mode found no exporter penalty distinguishable from run-to-run
   variation.
