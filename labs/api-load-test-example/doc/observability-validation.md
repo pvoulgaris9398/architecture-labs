@@ -54,3 +54,53 @@ marked complete.
 The August 2, 2026 connection-pool execution and its environment, observations, interpretation,
 and limitations are recorded in
 [the OTLP export overhead results](../results/2026-08-02-telemetry-overhead.md).
+
+## Log and trace volume
+
+Measure each unchanged load profile separately. The runner snapshots Collector counters and the
+Seq `/data` directory size, runs k6 once with an explicit test ID, waits for tail-sampling and
+export queues to settle, and writes raw and summarized evidence beneath the ignored
+`results/local/` directory.
+
+Before the table-scan run, record whether `IX_Orders_CustomerId` exists and keep that state fixed.
+The index state affects request duration and therefore the number of traces retained by the
+500 ms slow-trace policy.
+
+```bash
+RUN_LOAD_TESTS=1 \
+  K6_TEST_ID=volume-pool-20260803 \
+  bash measure-telemetry-volume.sh load-test.js
+
+RUN_LOAD_TESTS=1 \
+  K6_TEST_ID=volume-scan-no-index-20260803 \
+  INDEX_STATE=without-index \
+  bash measure-telemetry-volume.sh load-test-scan.js
+```
+
+For the scan workload, `INDEX_STATE` is required and must be `with-index` or `without-index`.
+The runner checks that value against `IX_Orders_CustomerId` in SQL Server and stops before k6 if
+they do not match. It does not change the index.
+
+The safety flag is required because each invocation runs the full three-minute profile. The
+default 15-second settling interval exceeds the Collector's five-second sampling decision wait
+and normal one-second batch timeout. Increase `TELEMETRY_SETTLE_SECONDS` if the exporter queue has
+not drained; do not silently compare runs with different settling intervals.
+
+For each run, preserve these values in a dated result:
+
+- k6 request count and duration from `k6-summary.json`;
+- accepted and refused spans and log records at the Collector receiver;
+- spans and log records sent or failed by the Seq exporter;
+- the change in Seq's persisted `/data` size; and
+- test ID, workload, index state, logging settings, software versions, and machine details.
+
+Collector counters measure records, not encoded OTLP bytes, and a trace usually contains multiple
+spans. Seq's directory growth includes indexes and storage-engine overhead and can be affected by
+compaction. Report spans per request, exported log records per request, and persisted KiB per
+request as operational volume estimates; do not present them as wire-format sizes. A negative Seq
+size delta is possible during compaction and requires a repeated run or a longer observation
+window. The runner rejects a Collector restart because cumulative counter deltas would be invalid.
+
+Successful-request logging is disabled by default, so an error-free run may export few or no
+application log records. Record `LOG_SUCCESSFUL_REQUESTS` and `LOG_SLOW_REQUESTS`; changing either
+setting changes the experiment rather than merely improving measurement.

@@ -21,7 +21,8 @@ links carry bounded test context into detailed log and trace investigations.
 [The dashboard investigation guide](doc/dashboard-investigation.md) explains the failure domains,
 telemetry health panels, empty-state meanings, and the recommended investigation order.
 [The observability validation guide](doc/observability-validation.md) defines the opt-in A/B
-procedure for measuring OTLP export overhead without automatically starting a heavy load test.
+procedures for measuring OTLP export overhead and per-scenario telemetry volume without
+automatically starting a heavy load test.
 
 The API accepts W3C `traceparent` and `tracestate` context plus optional `X-Request-ID`,
 `X-Test-ID`, and `X-Test-Scenario` headers. Every response includes `X-Request-ID` and

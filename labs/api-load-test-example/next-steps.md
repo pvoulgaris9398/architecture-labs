@@ -165,7 +165,10 @@ assumed.
 The connection-pool comparison is recorded in
 [the OTLP export overhead results](results/2026-08-02-telemetry-overhead.md). It found no exporter
 penalty distinguishable from run-to-run variation on the documented test machine. Step 9 remains
-in progress until the remaining volume, sampling, outage, and retention checks are complete.
+in progress until the remaining volume, sampling, outage, and retention checks are complete. The
+[observability validation guide](doc/observability-validation.md#log-and-trace-volume) now includes
+an opt-in runner for gathering the next required volume evidence without checking off the item
+before both scenarios have been measured.
 
 ## 10. Add an analysis runbook
 
