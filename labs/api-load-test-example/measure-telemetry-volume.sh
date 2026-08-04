@@ -32,7 +32,7 @@ verify_index_state() {
   local actual_count
 
   actual_count="$(
-    docker compose exec -T db-server /bin/bash -c \
+    MSYS_NO_PATHCONV=1 docker compose exec -T db-server /bin/bash -c \
       '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -d LoadTestDb -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.indexes WHERE name = '\''IX_Orders_CustomerId'\'' AND object_id = OBJECT_ID('\''dbo.Orders'\'');"'
   )"
   actual_count="${actual_count//[[:space:]]/}"
@@ -88,7 +88,7 @@ capture_collector_metrics() {
 }
 
 seq_size_kib() {
-  docker compose exec -T seq du -sk /data | while read -r size _; do
+  MSYS_NO_PATHCONV=1 docker compose exec -T seq du -sk /data | while read -r size _; do
     printf '%s\n' "${size}"
     break
   done
