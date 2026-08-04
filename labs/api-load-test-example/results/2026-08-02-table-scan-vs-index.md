@@ -197,7 +197,9 @@ identical warm-up, aligned steady-state windows, repeated runs, and preserved ev
 
 ## Follow-up checklist
 
-- [ ] Normalize incrementing SqlClient EventCounters to per-second rates in the bridge.
+- [x] Normalize incrementing SqlClient EventCounters to per-second rates in the bridge. The
+  correction was implemented after this exploratory run; the displayed rates above remain the
+  original uncorrected observations.
 - [ ] Revise dashboard titles and descriptions for stasis and active HTTP requests.
 - [ ] Add a repeatable pre-run API restart and warm-up procedure.
 - [ ] Run at least three repetitions per variant and alternate variant order.
@@ -205,4 +207,3 @@ identical warm-up, aligned steady-state windows, repeated runs, and preserved ev
 - [ ] Preserve k6 summaries and safe Grafana screenshots or metric exports for each run.
 - [ ] Record Docker allocation, software versions, Git revision, power mode, and background load.
 - [ ] Report median and range across repetitions.
-

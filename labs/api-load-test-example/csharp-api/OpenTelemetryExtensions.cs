@@ -245,12 +245,13 @@ internal sealed class SqlClientEventBridge : EventListener, IHostedService
             if (!counters.TryGetValue("Name", out var nameObj) || nameObj is not string name)
                 continue;
 
-            // Prefer Mean for rate/gauge counters; fall back to Increment for cumulative ones
+            // Mean values are already snapshots. Increment values contain the total accumulated
+            // during the EventCounter reporting interval, so normalize them to a per-second rate.
             double value = 0;
             if (counters.TryGetValue("Mean", out var meanObj) && meanObj is double mean)
                 value = mean;
             else if (counters.TryGetValue("Increment", out var incrObj) && incrObj is double incr)
-                value = incr;
+                value = incr / SamplingIntervalSeconds;
 
             lock (_valuesLock)
             {
