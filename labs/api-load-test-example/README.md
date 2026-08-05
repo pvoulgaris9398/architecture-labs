@@ -46,7 +46,7 @@ Do not enable successful-request logging for routine high-volume load tests.
 
 ## Prerequisites
 
-- Docker Desktop with Docker Compose
+- Docker Desktop with Docker Compose v2
 - [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
 - Bash with `curl`
 
@@ -59,8 +59,9 @@ winget install --id GrafanaLabs.k6 -e
 ## Configure and start
 
 Run the following commands from `labs/api-load-test-example` in the Architecture Labs working
-copy. This lab uses the shared SQL Server service baseline under `shared/compose/sqlserver` while
-retaining its ports, application, telemetry, and experiment-specific configuration locally.
+copy. This lab uses the shared SQL Server and OpenTelemetry Collector service baselines under
+`shared/compose` while retaining its ports, application, telemetry pipelines, and
+experiment-specific configuration locally.
 
 Copy the example environment file and replace its placeholder passwords:
 

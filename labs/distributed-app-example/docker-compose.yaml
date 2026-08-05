@@ -80,11 +80,13 @@ services:
       - app-network
 
   otel-collector:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: otel-collector-base
     image: otel/opentelemetry-collector-contrib:0.156.0
     container_name: architecture-labs-distributed-otel-collector
-    command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:
       - "4317:4317" # OTLP gRPC receiver endpoint
       - "4318:4318" # OTLP HTTP receiver endpoint

@@ -1,0 +1,37 @@
+# ADR 0003: Share observability container mechanics, not experiment pipelines
+
+- Status: Accepted
+- Date: 2026-08-05
+
+## Context
+
+The API load-test and distributed-app labs both run the OpenTelemetry Collector, but they use it
+for different experiments. The load-test lab sends sampled traces and logs to Seq and exposes
+collector health and metrics. The distributed-app lab sends traces to Jaeger. Their application
+instrumentation, processors, exporters, ports, and backends are therefore not interchangeable.
+
+Copying the stable collector launch mechanics invites drift, while moving the complete pipelines
+or language-specific instrumentation into one shared package would couple otherwise independent
+labs and obscure variables that affect experimental results.
+
+## Decision
+
+Create `shared/compose/observability/service.yaml` with an OpenTelemetry Collector base service.
+Consuming labs use Compose `extends` and retain their pinned image version, collector configuration,
+ports, dependencies, resource limits, and backend services locally.
+
+Standardize the collector's in-container configuration path as
+`/etc/otelcol-contrib/config.yaml`. Keep .NET, Python, and other SDK setup with the application that
+owns it because instrumentation is compiled, versioned, and validated with that application.
+
+Do not extract Jaeger, Seq, Prometheus, or Grafana yet. Each currently belongs to one concrete lab,
+and their configuration affects that lab's hypothesis or investigation workflow. Revisit a full
+shared subsystem only after multiple labs consume an equivalent stack largely unchanged.
+
+## Consequences
+
+- Collector startup behavior and configuration-path conventions have one maintained definition.
+- Each lab remains understandable and independently removable.
+- Collector pipelines and backend choices remain explicit experimental variables.
+- A shared edit requires configuration validation in both consuming labs.
+- Reuse is intentionally smaller than a universal observability stack.

@@ -35,6 +35,10 @@ Browser -> React dashboard -> .NET API gateway
 All credentials and open ports in this lab are local demonstration defaults. They are not suitable
 for production or a shared environment.
 
+The OpenTelemetry Collector extends the reusable container baseline under
+`shared/compose/observability`. Its Jaeger exporter pipeline, host ports, and application
+instrumentation remain in this lab because they define the experiment's telemetry behavior.
+
 ## Run
 
 Run commands from this directory:

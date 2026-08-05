@@ -38,6 +38,11 @@ architecture-labs/
 Directories will be added only when their first concrete use is introduced. Shared code should
 contain reusable mechanics—not assumptions that couple otherwise independent experiments.
 
+Reusable Compose baselines currently live under `shared/compose`. The observability baseline
+standardizes OpenTelemetry Collector startup mechanics while each lab retains its own telemetry
+pipeline, backend, ports, and instrumentation. See
+[ADR 0003](docs/decisions/0003-shared-observability-boundary.md) for the boundary and rationale.
+
 ## Lab expectations
 
 Each lab should document:

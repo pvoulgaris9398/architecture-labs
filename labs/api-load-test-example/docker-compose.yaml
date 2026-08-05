@@ -45,9 +45,10 @@ services:
       - "127.0.0.1:${SEQ_HOST_PORT:-5341}:80"
 
   otel-collector:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: otel-collector-base
     image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.157.0}
-    command:
-      - --config=/etc/otelcol-contrib/config.yaml
     volumes:
       - ./otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:
