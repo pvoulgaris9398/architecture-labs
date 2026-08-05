@@ -57,10 +57,15 @@ Each lab should document:
 | Lab | Question | Technologies | Status |
 | --- | --- | --- | --- |
 | [API load test](labs/api-load-test-example/README.md) | How do SQL query latency and indexing affect API latency and connection-pool pressure? | .NET 10, SQL Server, k6, OpenTelemetry, Prometheus, Grafana | In progress |
+| [Distributed app example](labs/distributed-app-example/README.md) | How do cache-aside reads, synchronous gRPC calls, and asynchronous messages interact in a polyglot system? | React, .NET 10, Python, PostgreSQL, Redis, RabbitMQ, OpenTelemetry, Jaeger | In progress |
 
 The first lab was migrated from the standalone `api-load-test-example` repository. Its
 [source provenance](labs/api-load-test-example/SOURCE.md) records the originating repository and
 commit while the migration is evaluated.
+
+The distributed app lab was migrated from `python-samples`; its
+[source provenance](labs/distributed-app-example/SOURCE.md) records the source commit and the
+monorepo-specific changes.
 
 ## Public-repository policy
 

@@ -1,0 +1,165 @@
+name: architecture-labs-distributed-app-example
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data_v1:
+  redis_data:
+
+services:
+  #----------------------
+  # Databases & storage
+  #----------------------
+  postgres:
+    image: postgres:18-alpine
+    container_name: architecture-labs-distributed-postgres
+    environment:
+      POSTGRES_DB: db_ecommerce
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dev_user -d db_ecommerce" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data_v1:/var/lib/postgresql
+
+  redis:
+    image: redis:8.8.0-alpine
+    container_name: architecture-labs-distributed-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  #----------------------
+  # Async message queues
+  #----------------------
+  rabbitmq:
+    image: rabbitmq:4.3.2-management-alpine
+    container_name: architecture-labs-distributed-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672" # AMQP Message Protocol port
+      - "15672:15672" # Management Web Dashboard Port 
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  #----------------------
+  # Async message queues
+  #----------------------
+  jaeger:
+    image: jaegertracing/jaeger:2.19.0
+    container_name: architecture-labs-distributed-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger Web UI Dashboard
+    networks:
+      - app-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.156.0
+    container_name: architecture-labs-distributed-otel-collector
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver endpoint
+      - "4318:4318" # OTLP HTTP receiver endpoint
+    networks:
+      - app-network
+    depends_on:
+      - jaeger
+
+  #----------------------
+  # CUSTOM APPLICATION RUNTIMES
+  #----------------------
+  python-grpc-inventory:
+    build: ./PythonInventoryService
+    container_name: architecture-labs-distributed-python-grpc
+    command: python main.py
+    expose:
+      - "50051"
+    networks:
+      - app-network
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    depends_on:
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      # Simple container execution check, can be advanced to nc -z local mock probes
+      test: ["CMD-SHELL", "python -c 'import socket; s = socket.socket(); s.connect((\"127.0.0.1\", 50051))'"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  python-rabbitmq-worker:
+    build: ./PythonInventoryService
+    container_name: architecture-labs-distributed-python-worker
+    command: python worker.py
+    networks:
+      - app-network
+    environment:
+      - ConnectionStrings__RabbitMQ=rabbitmq
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started      
+
+  dotnet-api-gateway:
+    build: 
+      context: .
+      dockerfile: DotnetApiGateway/Dockerfile
+    container_name: architecture-labs-distributed-dotnet-gateway
+    ports:
+      - "5242:8080" # Maps local development calls to inner .NET container port
+    networks:
+      - app-network
+    environment:
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=db_ecommerce;Username=dev_user;Password=dev_password
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__gRPCInventory=http://python-grpc-inventory:50051
+      - ConnectionStrings__RabbitMQ=rabbitmq
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      python-grpc-inventory:
+        condition: service_healthy   
+
+  typescript-dashboard:
+    build: ./DashboardClient
+    container_name: architecture-labs-distributed-dashboard
+    ports:
+      - "5173:80"
+    networks:
+      - app-network
+    depends_on:
+      - dotnet-api-gateway     
