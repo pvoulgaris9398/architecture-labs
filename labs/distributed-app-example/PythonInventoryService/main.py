@@ -5,12 +5,15 @@ import inventory_pb2
 import inventory_pb2_grpc
 
 # OpenTelemetry Setup
-from opentelemetry import trace
+from opentelemetry import metrics, trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 import os
 otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
@@ -18,10 +21,18 @@ otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
 
 # Configure Tracing to route back to our local OTel Collector
 resource = Resource.create(attributes={"service.name": "PythonInventoryService"})
-provider = TracerProvider(resource=resource)
+trace_provider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=otel_endpoint, insecure=True))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
+trace_provider.add_span_processor(processor)
+trace.set_tracer_provider(trace_provider)
+
+metric_reader = PeriodicExportingMetricReader(
+    OTLPMetricExporter(endpoint=otel_endpoint, insecure=True)
+)
+metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=[metric_reader]))
+stock_check_counter = metrics.get_meter(__name__).create_counter(
+    "distributed.inventory.stock_checks"
+)
 
 # Instrument the gRPC server layer
 grpc_server_instrumentor = GrpcInstrumentorServer()
@@ -31,6 +42,7 @@ tracer = trace.get_tracer(__name__)
 
 class InventoryServiceServicer(inventory_pb2_grpc.InventoryServiceServicer):
     def CheckStock(self, request, context):
+        stock_check_counter.add(1)
         # This code runs inside the parent span passed from .NET
         with tracer.start_as_current_span("CalculateInventoryLevels") as span:
             pid = request.product_id

@@ -7,6 +7,7 @@ networks:
 volumes:
   postgres_data_v1:
   redis_data:
+  prometheus_data:
 
 services:
   #----------------------
@@ -70,10 +71,11 @@ services:
   # Async message queues
   #----------------------
   jaeger:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: jaeger-base
     image: jaegertracing/jaeger:2.19.0
     container_name: architecture-labs-distributed-jaeger
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
     ports:
       - "16686:16686" # Jaeger Web UI Dashboard
     networks:
@@ -90,9 +92,51 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC receiver endpoint
       - "4318:4318" # OTLP HTTP receiver endpoint
+    expose:
+      - "8888"
+      - "8889"
     networks:
       - app-network
     depends_on:
+      - jaeger
+
+  prometheus:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: prometheus-base
+    container_name: architecture-labs-distributed-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "19090:9090"
+    networks:
+      - app-network
+    depends_on:
+      - otel-collector
+
+  grafana:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: grafana-base
+    container_name: architecture-labs-distributed-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: local-demo-only
+    volumes:
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "13000:3000"
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
       - jaeger
 
   #----------------------

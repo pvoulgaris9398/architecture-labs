@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 //using Microsoft.Extensions; // Standard namespaces
 using Microsoft.Extensions.Caching.Distributed;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using RabbitMQ.Client;
 
@@ -55,6 +57,9 @@ builder.Services.AddGrpcClient<DotnetApiGateway.Protos.InventoryService.Inventor
 // ----------------------------------------------------
 // Define a custom activity source for application-level trace spans
 var appSource = new ActivitySource("DotnetApiGateway.Core");
+var appMeter = new Meter("DistributedApp.Gateway");
+var productReadCounter = appMeter.CreateCounter<long>("distributed.gateway.product_reads");
+var checkoutCounter = appMeter.CreateCounter<long>("distributed.gateway.checkouts");
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
@@ -63,6 +68,16 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddEntityFrameworkCoreInstrumentation()
         .AddRedisInstrumentation() // Captures raw Redis commands automatically
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(
+                Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+                ?? "http://localhost:4317");
+        }))
+    .WithMetrics(metrics => metrics
+        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("DotnetApiGateway"))
+        .AddMeter("DistributedApp.Gateway")
+        .AddAspNetCoreInstrumentation()
         .AddOtlpExporter(options =>
         {
             options.Endpoint = new Uri(
@@ -99,6 +114,7 @@ app.MapGet("/products/{id:int}", async (
     AppDbContext db, 
     DotnetApiGateway.Protos.InventoryService.InventoryServiceClient inventoryClient) =>
 {
+    productReadCounter.Add(1);
     using var activity = appSource.StartActivity("GetProductDetail");
     activity?.SetTag("product.id", id);
 
@@ -157,6 +173,7 @@ app.MapPost("/products/seed", async (AppDbContext db) =>
 
 app.MapPost("/checkout", async (CheckoutRequest request, IConnectionFactory factory) =>
 {
+    checkoutCounter.Add(1);
     // Custom tracing tracking span
     using var activity = appSource.StartActivity("PublishOrderEvent");
     activity?.SetTag("checkout.product_id", request.ProductId);

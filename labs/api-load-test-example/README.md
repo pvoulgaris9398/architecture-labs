@@ -59,9 +59,9 @@ winget install --id GrafanaLabs.k6 -e
 ## Configure and start
 
 Run the following commands from `labs/api-load-test-example` in the Architecture Labs working
-copy. This lab uses the shared SQL Server and OpenTelemetry Collector service baselines under
-`shared/compose` while retaining its ports, application, telemetry pipelines, and
-experiment-specific configuration locally.
+copy. This lab uses the shared SQL Server, OpenTelemetry Collector, Seq, Prometheus, and Grafana
+service baselines under `shared/compose` while retaining its ports, application, telemetry
+pipelines, provisioning, and experiment-specific configuration locally.
 
 Copy the example environment file and replace its placeholder passwords:
 

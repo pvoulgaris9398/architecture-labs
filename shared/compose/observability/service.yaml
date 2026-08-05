@@ -4,3 +4,23 @@ services:
     command:
       - --config=/etc/otelcol-contrib/config.yaml
     restart: unless-stopped
+
+  prometheus-base:
+    image: prom/prometheus:v3.5.5
+    restart: unless-stopped
+
+  grafana-base:
+    image: grafana/grafana:13.1.1
+    restart: unless-stopped
+
+  jaeger-base:
+    image: jaegertracing/jaeger:2.19.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    restart: unless-stopped
+
+  seq-base:
+    image: datalust/seq:2026.1.17004-x64
+    environment:
+      ACCEPT_EULA: "Y"
+    restart: unless-stopped

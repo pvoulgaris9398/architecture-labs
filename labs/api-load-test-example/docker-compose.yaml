@@ -34,9 +34,11 @@ services:
         condition: service_healthy
 
   seq:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: seq-base
     image: ${SEQ_IMAGE:-datalust/seq:2026.1.17004-x64}
     environment:
-      ACCEPT_EULA: "Y"
       SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_ADMIN_USER:-admin}
       SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:?Set SEQ_ADMIN_PASSWORD in .env}
     volumes:
@@ -61,6 +63,9 @@ services:
       - seq
 
   prometheus:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: prometheus-base
     image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.5.5}
     command:
       - --config.file=/etc/prometheus/prometheus.yml
@@ -77,6 +82,9 @@ services:
       - api-service
 
   grafana:
+    extends:
+      file: ../../shared/compose/observability/service.yaml
+      service: grafana-base
     image: ${GRAFANA_IMAGE:-grafana/grafana:13.1.1}
     ports:
       - "3000:3000"

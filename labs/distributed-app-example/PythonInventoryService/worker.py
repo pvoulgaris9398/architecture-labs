@@ -1,11 +1,14 @@
 import pika
 import json
 import time
-from opentelemetry import trace
+from opentelemetry import metrics, trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 import os
 rabbit_host = os.getenv("ConnectionStrings__RabbitMQ", "localhost")
@@ -20,6 +23,14 @@ processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=otel_endpoint, insecure
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
+
+metric_reader = PeriodicExportingMetricReader(
+    OTLPMetricExporter(endpoint=otel_endpoint, insecure=True)
+)
+metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=[metric_reader]))
+processed_order_counter = metrics.get_meter(__name__).create_counter(
+    "distributed.worker.orders_processed"
+)
 
 def process_order(ch, method, properties, body):
     # Parse raw payload bytes 
@@ -39,6 +50,7 @@ def process_order(ch, method, properties, body):
 
         # Acknowledge completion back to RabbitMQ broker engine
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        processed_order_counter.add(1)
 
 def main():
     # Connect to RabbitMQ container

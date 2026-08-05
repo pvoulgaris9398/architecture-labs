@@ -4,8 +4,8 @@ Status: **In progress**
 
 This lab is a local polyglot application for exploring synchronous and asynchronous communication
 across independently deployed services. It combines a React dashboard, a .NET API gateway, a
-Python gRPC inventory service, and a Python RabbitMQ worker with PostgreSQL, Redis, RabbitMQ, and
-OpenTelemetry tracing.
+Python gRPC inventory service, and a Python RabbitMQ worker with PostgreSQL, Redis, RabbitMQ,
+OpenTelemetry traces and metrics, Prometheus, Grafana, and Jaeger.
 
 ## Question
 
@@ -24,20 +24,22 @@ Browser -> React dashboard -> .NET API gateway
                               |-> Python inventory service (gRPC)
                               `-> RabbitMQ -> Python worker
 
-.NET gateway + Python services -> OpenTelemetry Collector -> Jaeger
+.NET gateway + Python services -> OpenTelemetry Collector -> Jaeger (traces)
+                                                    `------> Prometheus -> Grafana (metrics)
 ```
 
 ## Prerequisites
 
 - Docker Engine with Docker Compose v2
-- Enough local resources to run nine containers
+- Enough local resources to run eleven containers
 
 All credentials and open ports in this lab are local demonstration defaults. They are not suitable
 for production or a shared environment.
 
-The OpenTelemetry Collector extends the reusable container baseline under
-`shared/compose/observability`. Its Jaeger exporter pipeline, host ports, and application
-instrumentation remain in this lab because they define the experiment's telemetry behavior.
+The OpenTelemetry Collector, Prometheus, Grafana, and Jaeger extend reusable container baselines
+under `shared/compose/observability`. Their pipelines, scrape targets, provisioning, dashboard,
+host ports, and application instrumentation remain in this lab because they define the
+experiment's telemetry behavior.
 
 ## Run
 
@@ -58,7 +60,14 @@ curl http://127.0.0.1:5242/products/1
 
 - Dashboard: <http://127.0.0.1:5173>
 - Jaeger: <http://127.0.0.1:16686>
+- Prometheus: <http://127.0.0.1:19090>
+- Grafana: <http://127.0.0.1:13000> (`admin` / `local-demo-only`)
 - RabbitMQ management: <http://127.0.0.1:15672> (`guest` / `guest`)
+
+Grafana provisions Prometheus and Jaeger data sources plus the **Distributed App Telemetry
+Overview** dashboard. The dashboard reports collector availability and accepted trace and metric
+throughput. Application counters cover gateway product reads and checkouts, inventory stock
+checks, and completed worker orders.
 
 Stop the lab without deleting persisted data:
 
@@ -66,7 +75,8 @@ Stop the lab without deleting persisted data:
 docker compose down
 ```
 
-The following cleanup is destructive and deletes this lab's PostgreSQL and Redis volumes:
+The following cleanup is destructive and deletes this lab's PostgreSQL, Redis, and Prometheus
+volumes:
 
 ```bash
 docker compose down --volumes
@@ -91,7 +101,8 @@ workload and measurement window before changing a single communication or cachin
 
 The lab is considered functionally successful when a seeded product can be read through the
 gateway, a repeat read reports a Redis cache hit, checkout publishes an event consumed by the
-worker, and the cross-service traces appear in Jaeger.
+worker, cross-service traces appear in Jaeger, application metrics reach Prometheus, and the
+provisioned Grafana dashboard reports telemetry traffic.
 
 ## Known limitations
 
