@@ -6,10 +6,12 @@ namespace Server.Handlers;
 public sealed class ReplayHandler : MessageHandler<ReplayRequest>
 {
     private readonly EventStore _eventStore;
+    private readonly OutboundQueue _outbound;
 
-    public ReplayHandler(EventStore eventStore)
+    public ReplayHandler(EventStore eventStore, OutboundQueue outbound)
     {
         _eventStore = eventStore;
+        _outbound = outbound;
     }
 
     public override string MessageType => "replay";
@@ -32,7 +34,7 @@ public sealed class ReplayHandler : MessageHandler<ReplayRequest>
                 Message = e.Message,
             };
 
-            await connection.Outbound.Writer.WriteAsync(eventMessage, cancellationToken);
+            await _outbound.EnqueueAsync(connection, eventMessage, cancellationToken);
         }
 
         Console.WriteLine($"Queued {events.Count()} replay events for {connection.Id}");

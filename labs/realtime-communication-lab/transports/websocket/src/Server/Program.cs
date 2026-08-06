@@ -1,4 +1,6 @@
 using System.Net.WebSockets;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Server.Handlers;
 using Server.Services;
 using Server.WebSockets;
@@ -10,6 +12,16 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<EventStore>();
 
 builder.Services.AddSingleton<ConnectionManager>();
+
+builder.Services.AddSingleton<WebSocketMetrics>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<WebSocketMetrics>());
+
+builder.Services.AddSingleton<OutboundQueue>();
+
+builder
+    .Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("realtime-websocket-server"))
+    .WithMetrics(metrics => metrics.AddMeter(WebSocketMetrics.MeterName).AddPrometheusExporter());
 
 builder.Services.AddSingleton<BroadcastService>();
 
@@ -60,5 +72,7 @@ app.Map(
 );
 
 app.MapControllers();
+
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
 app.Run();

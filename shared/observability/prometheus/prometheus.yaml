@@ -18,6 +18,10 @@ scrape_configs:
     static_configs:
       - targets: [distributed-app-collector:8889]
 
+  - job_name: realtime-websocket
+    static_configs:
+      - targets: [architecture-labs-realtime-websocket-server:8080]
+
   - job_name: windows-host-os
     static_configs:
       - targets: [host.docker.internal:9182]

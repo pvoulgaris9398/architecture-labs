@@ -18,3 +18,12 @@ providers:
     updateIntervalSeconds: 10
     options:
       path: /var/lib/grafana/dashboards/distributed-app
+
+  - name: Realtime communication
+    orgId: 1
+    folder: Realtime Communication
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards/realtime-communication

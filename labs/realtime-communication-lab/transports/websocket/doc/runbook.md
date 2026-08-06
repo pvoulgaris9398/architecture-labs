@@ -57,6 +57,16 @@ POST /api/events
 GET  /api/events?since=0
 ```
 
+Check that the Prometheus endpoint is available:
+
+```bash
+curl -fsS http://127.0.0.1:5000/metrics | grep 'websocket_connections_active'
+```
+
+Expected result: the metric is present. Its value increases after opening a WebSocket connection.
+The shared Grafana dashboard **Realtime Communication / WebSocket outbound queues** visualizes the
+same metrics when the shared observability stack is running.
+
 If startup fails, inspect the logs before continuing:
 
 ```bash

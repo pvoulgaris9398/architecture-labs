@@ -5,6 +5,8 @@ namespace Server.Models;
 
 public sealed class ClientConnection
 {
+    public const int OutboundCapacity = 500;
+
     public Guid Id { get; } = Guid.NewGuid();
 
     public required WebSocket Socket { get; init; }
@@ -20,9 +22,9 @@ public sealed class ClientConnection
     /// Every component in the application will eventually enqueue
     /// SocketMessage instances here instead of writing directly to the socket.
     /// </summary>
-    public Channel<SocketMessage> Outbound { get; } =
-        Channel.CreateBounded<SocketMessage>(
-            new BoundedChannelOptions(500)
+    public Channel<QueuedSocketMessage> Outbound { get; } =
+        Channel.CreateBounded<QueuedSocketMessage>(
+            new BoundedChannelOptions(OutboundCapacity)
             {
                 SingleReader = true,
                 SingleWriter = false,
@@ -37,3 +39,5 @@ public sealed class ClientConnection
     /// </summary>
     public CancellationTokenSource Cancellation { get; } = new();
 }
+
+public sealed record QueuedSocketMessage(SocketMessage Message, long EnqueuedTimestamp);

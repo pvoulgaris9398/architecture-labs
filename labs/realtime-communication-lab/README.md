@@ -14,7 +14,8 @@ The migrated baseline is a .NET 10 server using ASP.NET Core's raw WebSocket sup
 
 - a WebSocket endpoint at `/ws`;
 - an HTTP endpoint at `/api/events` for publishing and retrieving events;
-- ping/pong, acknowledgements, replay, heartbeat, ordering, and in-memory event storage; and
+- ping/pong, acknowledgements, replay, heartbeat, ordering, and in-memory event storage;
+- a bounded, single-writer outbound channel per connection with Prometheus queue metrics; and
 - an interactive React walkthrough under `walkthrough-ui/`.
 
 The in-memory event store is deliberately non-durable. Restarting the server loses its events.
@@ -62,6 +63,12 @@ docker compose up --build
 
 Open <http://127.0.0.1:15173>, select **WebSocket**, and follow the numbered steps. The UI proxies
 its `/api` and `/ws` requests to the server within Docker, so the browser uses one origin.
+
+The server exposes Prometheus metrics at <http://127.0.0.1:5000/metrics>. When the shared
+observability stack is running, open Grafana and select **Realtime Communication / WebSocket
+outbound queues**. The dashboard shows active connections, aggregate queue depth and capacity,
+message rates, queue delay, backpressure waits, and send failures. Connection identifiers are
+intentionally excluded from metric labels to avoid unbounded time-series cardinality.
 
 For UI development with hot reload, keep the server container running and start Vite separately:
 

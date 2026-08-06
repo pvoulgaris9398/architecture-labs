@@ -7,6 +7,13 @@ namespace Server.Services;
 
 public sealed class ConnectionSender
 {
+    private readonly WebSocketMetrics _metrics;
+
+    public ConnectionSender(WebSocketMetrics metrics)
+    {
+        _metrics = metrics;
+    }
+
     public async Task RunAsync(ClientConnection connection)
     {
         Console.WriteLine($"Sender started for {connection.Id}");
@@ -14,15 +21,13 @@ public sealed class ConnectionSender
         try
         {
             await foreach (
-                var message in connection.Outbound.Reader.ReadAllAsync(
-                    connection.Cancellation.Token
-                )
+                var queued in connection.Outbound.Reader.ReadAllAsync(connection.Cancellation.Token)
             )
             {
                 if (connection.Socket.State != WebSocketState.Open)
                     break;
 
-                var json = JsonSerializer.Serialize(message);
+                var json = JsonSerializer.Serialize(queued.Message);
 
                 var bytes = Encoding.UTF8.GetBytes(json);
 
@@ -33,7 +38,9 @@ public sealed class ConnectionSender
                     connection.Cancellation.Token
                 );
 
-                Console.WriteLine($"Sent {message.Type} to {connection.Id}");
+                _metrics.MessageSent(queued.Message.Type, queued.EnqueuedTimestamp);
+
+                Console.WriteLine($"Sent {queued.Message.Type} to {connection.Id}");
             }
         }
         catch (OperationCanceledException)
@@ -42,10 +49,12 @@ public sealed class ConnectionSender
         }
         catch (WebSocketException ex)
         {
+            _metrics.SendFailed(nameof(WebSocketException));
             Console.WriteLine($"WebSocket error ({connection.Id}): {ex.Message}");
         }
         catch (Exception ex)
         {
+            _metrics.SendFailed(ex.GetType().Name);
             Console.WriteLine($"Sender failed ({connection.Id}): {ex}");
         }
 
