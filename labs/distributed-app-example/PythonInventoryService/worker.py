@@ -11,8 +11,18 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 import os
-rabbit_host = os.getenv("ConnectionStrings__RabbitMQ", "localhost")
-otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+
+def required_env(name):
+    value = os.environ.get(name)
+    if not value or not value.strip():
+        raise RuntimeError(f"Required environment variable '{name}' is missing or empty.")
+    return value
+
+rabbit_host = required_env("RABBITMQ_HOST")
+rabbit_port = int(required_env("RABBITMQ_PORT"))
+rabbit_username = required_env("RABBITMQ_USERNAME")
+rabbit_password = required_env("RABBITMQ_PASSWORD")
+otel_endpoint = required_env("OTEL_EXPORTER_OTLP_ENDPOINT")
 
 
 # Configure OpenTelemetry Tracing for Worker Process
@@ -53,7 +63,12 @@ def process_order(ch, method, properties, body):
 
 def main():
     # Connect to RabbitMQ container
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbit_host))
+    credentials = pika.PlainCredentials(rabbit_username, rabbit_password)
+    connection = pika.BlockingConnection(pika.ConnectionParameters(
+        host=rabbit_host,
+        port=rabbit_port,
+        credentials=credentials,
+    ))
     channel = connection.channel()
 
     # Match exchange layout declared in .NET application

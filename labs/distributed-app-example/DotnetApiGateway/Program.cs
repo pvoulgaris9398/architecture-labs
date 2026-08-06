@@ -9,17 +9,26 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using RabbitMQ.Client;
 
-var postgresConn = Environment.GetEnvironmentVariable("ConnectionStrings__PostgreSQL") 
-    ?? "Host=localhost;Port=5432;Database=db_ecommerce;Username=dev_user;Password=dev_password";
+static string GetRequiredEnvironmentVariable(string name)
+{
+    var value = Environment.GetEnvironmentVariable(name);
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        throw new InvalidOperationException(
+            $"Required environment variable '{name}' is missing or empty.");
+    }
 
-var redisConn = Environment.GetEnvironmentVariable("ConnectionStrings__Redis") 
-    ?? "localhost:6379";
+    return value;
+}
 
-var grpcUrl = Environment.GetEnvironmentVariable("ConnectionStrings__gRPCInventory") 
-    ?? "http://localhost:50051";
-
-var rabbitHost = Environment.GetEnvironmentVariable("ConnectionStrings__RabbitMQ") 
-    ?? "localhost";
+var postgresConn = GetRequiredEnvironmentVariable("ConnectionStrings__PostgreSQL");
+var redisConn = GetRequiredEnvironmentVariable("ConnectionStrings__Redis");
+var grpcUrl = GetRequiredEnvironmentVariable("ConnectionStrings__gRPCInventory");
+var rabbitHost = GetRequiredEnvironmentVariable("RABBITMQ_HOST");
+var rabbitPort = int.Parse(GetRequiredEnvironmentVariable("RABBITMQ_PORT"));
+var rabbitUsername = GetRequiredEnvironmentVariable("RABBITMQ_USERNAME");
+var rabbitPassword = GetRequiredEnvironmentVariable("RABBITMQ_PASSWORD");
+var otelEndpoint = GetRequiredEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,17 +36,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IConnectionFactory>(sp => new ConnectionFactory
 {
     HostName = rabbitHost,
-    Port = 5672,
-    UserName = "guest",
-    Password = "guest"
+    Port = rabbitPort,
+    UserName = rabbitUsername,
+    Password = rabbitPassword
 });
 
 // ----------------------------------------------------
 // 1. Storage & Caching Configurations
 // ----------------------------------------------------
-// var postgresConn = "Host=localhost;Port=5432;Database=ecom_db;Username=dev_user;Password=dev_password";
-// var redisConn = "localhost:6379";
-
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(postgresConn));
 builder.Services.AddStackExchangeRedisCache(options =>
 {
@@ -70,9 +76,7 @@ builder.Services.AddOpenTelemetry()
         .AddRedisInstrumentation() // Captures raw Redis commands automatically
         .AddOtlpExporter(options =>
         {
-            options.Endpoint = new Uri(
-                Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
-                ?? "http://localhost:4317");
+            options.Endpoint = new Uri(otelEndpoint);
         }))
     .WithMetrics(metrics => metrics
         .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("DotnetApiGateway"))
@@ -80,9 +84,7 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddOtlpExporter(options =>
         {
-            options.Endpoint = new Uri(
-                Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
-                ?? "http://localhost:4317");
+            options.Endpoint = new Uri(otelEndpoint);
         }));
 
 // Allow any origin, method, and header for testing purposes

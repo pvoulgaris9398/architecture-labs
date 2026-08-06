@@ -33,8 +33,24 @@ Browser -> React dashboard -> .NET API gateway
 - Docker Engine with Docker Compose v2
 - Enough local resources to run eleven containers
 
-All credentials and open ports in this lab are local demonstration defaults. They are not suitable
-for production or a shared environment.
+The example file contains local demonstration values. Its credentials and open ports are not
+suitable for production or a shared environment.
+
+## Configuration
+
+Copy the example file before building or starting the lab:
+
+```bash
+cp .env.example .env
+```
+
+Replace every demonstration credential in `.env`. The local file is ignored by Git. Compose
+requires every declared value, and the .NET gateway, Python services, and dashboard independently
+fail at startup or build time when a required application variable is missing or empty. There are
+no application fallback values.
+
+`VITE_API_BASE_URL` is embedded into the browser bundle when the dashboard image is built. Rebuild
+`typescript-dashboard` after changing it.
 
 The OpenTelemetry Collector, Prometheus, Grafana, and Jaeger extend reusable container baselines
 under `shared/compose/observability`. Their pipelines, scrape targets, provisioning, dashboard,
@@ -46,7 +62,7 @@ experiment's telemetry behavior.
 Run commands from this directory:
 
 ```bash
-docker compose config --quiet
+docker compose --env-file .env.example config --quiet
 docker compose up --build -d
 docker compose ps
 ```
@@ -61,8 +77,8 @@ curl http://127.0.0.1:5242/products/1
 - Dashboard: <http://127.0.0.1:5173>
 - Jaeger: <http://127.0.0.1:16686>
 - Prometheus: <http://127.0.0.1:19090>
-- Grafana: <http://127.0.0.1:13000> (`admin` / `local-demo-only`)
-- RabbitMQ management: <http://127.0.0.1:15672> (`guest` / `guest`)
+- Grafana: <http://127.0.0.1:13000> (credentials from `.env`)
+- RabbitMQ management: <http://127.0.0.1:15672> (credentials from `.env`)
 
 Grafana provisions Prometheus and Jaeger data sources plus the **Distributed App Telemetry
 Overview** dashboard. The dashboard reports collector availability and accepted trace and metric
@@ -85,7 +101,7 @@ docker compose down --volumes
 ## Validation
 
 ```bash
-docker compose config --quiet
+docker compose --env-file .env.example config --quiet
 docker compose build
 git diff --check
 ```

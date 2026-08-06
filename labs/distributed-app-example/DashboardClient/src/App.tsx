@@ -16,6 +16,12 @@ interface ProductResponse {
   };
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE?.trim()) {
+  throw new Error('Required environment variable VITE_API_BASE_URL is missing or empty.');
+}
+
 export default function App() {
   const [productId, setProductId] = useState<string>('1');
   const [loadingProduct, setLoadingProduct] = useState<boolean>(false);
@@ -24,8 +30,6 @@ export default function App() {
   const [checkoutQuantity, setCheckoutQuantity] = useState<number>(1);
   const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
   const [orderMessage, setOrderMessage] = useState<string | null>(null);
-
-  const API_BASE = 'http://localhost:5242'; // Match your local .NET API Port
 
   // 1. Fetch Product with Cache-Aside logic
   const handleFetchProduct = async () => {

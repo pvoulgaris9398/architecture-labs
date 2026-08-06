@@ -16,8 +16,14 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 import os
-otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-# Update processor target variable endpoint string parameter accordingly
+
+def required_env(name):
+    value = os.environ.get(name)
+    if not value or not value.strip():
+        raise RuntimeError(f"Required environment variable '{name}' is missing or empty.")
+    return value
+
+otel_endpoint = required_env("OTEL_EXPORTER_OTLP_ENDPOINT")
 
 # Configure Tracing to route back to our local OTel Collector
 resource = Resource.create(attributes={"service.name": "PythonInventoryService"})
