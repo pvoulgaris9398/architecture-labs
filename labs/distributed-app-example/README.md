@@ -79,7 +79,7 @@ docker compose ps
 Seed the catalog, then open the dashboard:
 
 ```bash
-curl -X POST http://127.0.0.1:5242/products/seed
+  curl -X POST http://127.0.0.1:5242/products/seed
 curl http://127.0.0.1:5242/products/1
 ```
 
@@ -143,4 +143,5 @@ provisioned Grafana dashboard reports telemetry traffic.
 - There is no automated smoke test, workload, captured result set, or evidence-backed conclusion.
 
 See [SOURCE.md](SOURCE.md) for migration provenance and [doc/worklog.md](doc/worklog.md) for the
-original development notes.
+original development notes. Use the [exercise runbook](doc/exercise-runbook.md) for an end-to-end
+smoke test, observability checks, and safe dependency-failure exercises.
