@@ -47,18 +47,33 @@ realtime-communication-lab/
 Empty planned directories contain `.gitkeep` files so the intended structure remains visible in
 Git without implying that those implementations exist.
 
-## Run the web application shell
+## Run the WebSocket walkthrough
 
-The lab root contains a Vite, React, and TypeScript start page that will host the interactive lab
-controls as they are added.
+The WebSocket Compose project runs both the .NET server and the browser-based walkthrough. It
+requires the external `architecture-labs-observability` Docker network created by the shared
+observability project.
 
 ```bash
-cd labs/realtime-communication-lab
-pnpm install
-pnpm dev
+cd labs/realtime-communication-lab/transports/websocket
+docker compose config --quiet
+docker compose up --build
 ```
 
-Open the local URL printed by Vite. Create a production build with `pnpm build`.
+Open <http://127.0.0.1:15173>, select **WebSocket**, and follow the numbered steps. The UI proxies
+its `/api` and `/ws` requests to the server within Docker, so the browser uses one origin.
+
+For UI development with hot reload, keep the server container running and start Vite separately:
+
+```bash
+cd labs/realtime-communication-lab/transports/websocket
+docker compose up --build -d server
+
+cd ../..
+npx --yes pnpm@11.16.0 install --frozen-lockfile
+npx --yes pnpm@11.16.0 dev
+```
+
+Vite proxies the same paths to the server at `http://127.0.0.1:5000`.
 
 ## Run the WebSocket baseline
 
@@ -70,7 +85,8 @@ docker compose config --quiet
 docker compose up --build
 ```
 
-The server listens on `http://localhost:5000`. In another terminal, connect with a WebSocket client:
+The server remains directly available at `http://localhost:5000` for command-line testing. In
+another terminal, connect with a WebSocket client:
 
 ```bash
 npx wscat -c ws://localhost:5000/ws
@@ -106,6 +122,7 @@ dotnet tool restore
 dotnet build WebSocketDemo.sln
 dotnet csharpier check src/Server
 docker compose config --quiet
+docker compose build
 ```
 
 No controlled benchmark has been run yet. Workload definition, controlled variables, success

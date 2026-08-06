@@ -1,45 +1,38 @@
+import { useState } from 'react';
+import WebSocketWalkthrough from './WebSocketWalkthrough';
+
+type View = 'overview' | 'websocket';
+
 const areas = [
   {
     number: '01',
     title: 'Transports',
     description: 'Compare connection models and message flow.',
+    status: 'In progress',
   },
   {
     number: '02',
     title: 'Brokers',
     description: 'Explore messaging infrastructure and routing.',
+    status: 'Planned',
   },
   {
     number: '03',
     title: 'Reliability',
     description: 'Exercise delivery, replay, ordering, and pressure.',
+    status: 'Planned',
   },
   {
     number: '04',
     title: 'Benchmarks',
     description: 'Observe behavior under controlled workloads.',
+    status: 'Planned',
   },
 ];
 
-export default function App() {
+function Overview({ openWebSocket }: { openWebSocket: () => void }) {
   return (
-    <main className="page-shell">
-      <header className="site-header">
-        <a className="brand" href="/" aria-label="Realtime Communication Lab home">
-          <span className="brand-mark" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
-          <span>Realtime Communication Lab</span>
-        </a>
-
-        <div className="status" aria-label="Application status: foundation ready">
-          <span className="status-dot" aria-hidden="true" />
-          Foundation ready
-        </div>
-      </header>
-
+    <>
       <section className="hero" aria-labelledby="page-title">
         <div className="eyebrow">
           <span>Architecture Labs</span>
@@ -57,6 +50,11 @@ export default function App() {
           small, observable experiments.
         </p>
 
+        <button className="primary-action" type="button" onClick={openWebSocket}>
+          Start the WebSocket walkthrough
+          <span aria-hidden="true">→</span>
+        </button>
+
         <div className="signal-track" aria-hidden="true">
           <span className="signal-node" />
           <span className="signal-line" />
@@ -68,8 +66,8 @@ export default function App() {
 
       <section className="exploration" aria-labelledby="exploration-title">
         <div className="section-heading">
-          <p>Planned workspace</p>
-          <h2 id="exploration-title">The lab will grow here.</h2>
+          <p>Lab workspace</p>
+          <h2 id="exploration-title">Build understanding one path at a time.</h2>
         </div>
 
         <div className="area-grid">
@@ -77,7 +75,9 @@ export default function App() {
             <article className="area-card" key={area.title}>
               <div className="card-topline">
                 <span>{area.number}</span>
-                <span className="planned-label">Planned</span>
+                <span className={area.status === 'In progress' ? 'active-label' : 'planned-label'}>
+                  {area.status}
+                </span>
               </div>
               <h3>{area.title}</h3>
               <p>{area.description}</p>
@@ -85,10 +85,73 @@ export default function App() {
           ))}
         </div>
       </section>
+    </>
+  );
+}
+
+export default function App() {
+  const [view, setView] = useState<View>('overview');
+
+  return (
+    <main className="page-shell">
+      <header className="site-header">
+        <button
+          className="brand"
+          type="button"
+          aria-label="Open Realtime Communication Lab overview"
+          onClick={() => setView('overview')}
+        >
+          <span className="brand-mark" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span>Realtime Communication Lab</span>
+        </button>
+
+        <div className="status" aria-label="Application status: interactive lab ready">
+          <span className="status-dot" aria-hidden="true" />
+          Interactive lab
+        </div>
+      </header>
+
+      <nav className="view-tabs" aria-label="Lab sections">
+        <button
+          type="button"
+          className={view === 'overview' ? 'view-tab active' : 'view-tab'}
+          aria-current={view === 'overview' ? 'page' : undefined}
+          onClick={() => setView('overview')}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          className={view === 'websocket' ? 'view-tab active' : 'view-tab'}
+          aria-current={view === 'websocket' ? 'page' : undefined}
+          onClick={() => setView('websocket')}
+        >
+          WebSocket
+          <span className="tab-available">Available</span>
+        </button>
+        <button type="button" className="view-tab" disabled>
+          SignalR
+          <span>Planned</span>
+        </button>
+        <button type="button" className="view-tab" disabled>
+          SSE
+          <span>Planned</span>
+        </button>
+      </nav>
+
+      {view === 'overview' ? (
+        <Overview openWebSocket={() => setView('websocket')} />
+      ) : (
+        <WebSocketWalkthrough />
+      )}
 
       <footer>
         <span>Start simple. Measure carefully.</span>
-        <span>Interactive controls coming next.</span>
+        <span>Realtime Communication Lab</span>
       </footer>
     </main>
   );

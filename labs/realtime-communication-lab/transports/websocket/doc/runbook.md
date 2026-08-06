@@ -37,6 +37,10 @@ docker compose ps
 
 Expected result: `server` is running and publishes container port `8080` on host port `5000`.
 
+The Compose project also starts the interactive walkthrough at <http://127.0.0.1:15173>. Select the
+**WebSocket** tab to perform the same core connection, ping, publish, acknowledgement, and replay
+checks from the browser. Continue below when testing the protocol directly with command-line tools.
+
 Check the HTTP endpoint:
 
 ```bash
@@ -77,7 +81,7 @@ At the `>` prompt, send:
 Expected response:
 
 ```json
-{"Type":"pong"}
+{"Type":"pong","TimestampUtc":"<UTC timestamp>"}
 ```
 
 The message-property casing is not significant for incoming messages. Outgoing WebSocket messages
@@ -222,7 +226,7 @@ Exit all `wscat` sessions, then stop the demo:
 docker compose down
 ```
 
-The demo defines no named volumes, so this removes only its container. It does not remove the
+The demo defines no named volumes, so this removes only its containers. It does not remove the
 external `architecture-labs-observability` network or any shared observability resources.
 
 ## Troubleshooting

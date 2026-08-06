@@ -7,6 +7,18 @@ networks:
 
 services:
 
+  ui:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: architecture-labs-realtime-websocket-ui
+    ports:
+      - "15173:80"
+    networks:
+      - observability
+    depends_on:
+      - server
+
   server:
     build:
       context: ./src/Server
