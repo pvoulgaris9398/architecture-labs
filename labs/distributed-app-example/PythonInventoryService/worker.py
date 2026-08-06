@@ -13,7 +13,6 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 import os
 rabbit_host = os.getenv("ConnectionStrings__RabbitMQ", "localhost")
 otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbit_host))
 
 
 # Configure OpenTelemetry Tracing for Worker Process
