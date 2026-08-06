@@ -71,8 +71,9 @@ curl -X POST http://localhost:5000/api/events \
   -d '{"message":"Hello"}'
 ```
 
-More manual checks are documented in
-[`transports/websocket/doc/testing.md`](transports/websocket/doc/testing.md).
+The complete functional test procedure is in the
+[`WebSocket demo test runbook`](transports/websocket/doc/runbook.md). The earlier
+[`testing notes`](transports/websocket/doc/testing.md) retain implementation trade-off context.
 
 Stop the baseline without deleting material state:
 
