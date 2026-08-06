@@ -3,7 +3,7 @@ name: api-load-test-example
 services:
   db-server:
     extends:
-      file: ../../shared/compose/sqlserver/service.yaml
+      file: ../../shared/sqlserver/service.yaml
       service: sqlserver-base
     ports:
       - "1433:1433"

@@ -21,7 +21,7 @@ Use Compose `include` only when a complete subsystem is intentionally consumed w
 level customization. Do not create shared service definitions speculatively; introduce them when
 a concrete lab establishes a real use and expand them only after repetition confirms the boundary.
 
-The first application of this decision is `shared/compose/sqlserver/service.yaml`, extended by the
+The first application of this decision is `shared/sqlserver/service.yaml`, extended by the
 API load-test lab. Observability later moved to an independently runnable shared support stack as
 recorded in ADR 0003; it is no longer modeled as individual Compose service baselines.
 

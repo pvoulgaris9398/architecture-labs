@@ -29,16 +29,17 @@ architecture-labs/
 ├── docs/
 │   └── decisions/
 ├── labs/
-│   └── api-load-test-example/
-├── shared/
-│   └── compose/
-└── tools/
+│   ├── api-load-test-example/
+│   └── distributed-app-example/
+└── shared/
+    ├── observability/
+    └── sqlserver/
 ```
 
 Directories will be added only when their first concrete use is introduced. Shared code should
 contain reusable mechanics—not assumptions that couple otherwise independent experiments.
 
-Reusable service baselines live under `shared/compose`. The independently runnable
+The reusable SQL Server service baseline lives under `shared/sqlserver`. The independently runnable
 `shared/observability` project owns the repository's local collectors, Prometheus, Grafana, Seq,
 Jaeger, telemetry storage, and dashboard provisioning. Labs retain their application
 instrumentation and connect over a named external network. See
