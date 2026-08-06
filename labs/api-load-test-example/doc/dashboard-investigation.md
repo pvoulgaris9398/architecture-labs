@@ -62,8 +62,8 @@ queue pressure, Collector logs, and Seq ingestion results remain part of outage 
 ## Storage pressure
 
 **Host Storage Free (C:)** uses optional windows_exporter metrics and highlights the lab's 10 GiB
-free-space guardrail. It is a host warning, not direct measurement of the `seq-data` or
-`prometheus-data` Docker volumes. Step 9 must measure those volumes directly and verify retention.
+free-space guardrail. It is a host warning, not direct measurement of the shared `seq_data` or
+`prometheus_data` Docker volumes. Step 9 must measure those volumes directly and verify retention.
 
 If the panel is blank, windows_exporter is unavailable. Blank does not mean storage is healthy.
 

@@ -20,7 +20,7 @@ services:
       Diagnostics__LogSlowRequests: ${LOG_SLOW_REQUESTS:-false}
       Diagnostics__SlowRequestThresholdMs: ${SLOW_REQUEST_THRESHOLD_MS:-500}
       Telemetry__OtlpEnabled: ${TELEMETRY_OTLP_ENABLED:-true}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:?Set OTEL_EXPORTER_OTLP_ENDPOINT in .env}
       OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
       OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: ${OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY:-in_memory}
       OTEL_BSP_MAX_QUEUE_SIZE: ${OTEL_BSP_MAX_QUEUE_SIZE:-4096}
@@ -32,77 +32,11 @@ services:
     depends_on:
       db-server:
         condition: service_healthy
+    networks:
+      - default
+      - observability
 
-  seq:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: seq-base
-    image: ${SEQ_IMAGE:-datalust/seq:2026.1.17004-x64}
-    environment:
-      SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_ADMIN_USER:-admin}
-      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:?Set SEQ_ADMIN_PASSWORD in .env}
-    volumes:
-      - seq-data:/data
-    ports:
-      - "127.0.0.1:${SEQ_HOST_PORT:-5341}:80"
-
-  otel-collector:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: otel-collector-base
-    image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.157.0}
-    volumes:
-      - ./otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
-    ports:
-      - "${OTEL_GRPC_HOST_PORT:-14317}:4317"
-      - "${OTEL_HTTP_HOST_PORT:-14318}:4318"
-      - "${OTEL_HEALTH_HOST_PORT:-13133}:13133"
-      - "${OTEL_METRICS_HOST_PORT:-18888}:8888"
-    mem_limit: 512m
-    depends_on:
-      - seq
-
-  prometheus:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: prometheus-base
-    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.5.5}
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=7d
-      - --web.enable-remote-write-receiver
-    volumes:
-      # Apparently this container expects the "prometheus.yml" not "yaml"
-      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
-    depends_on:
-      - api-service
-
-  grafana:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: grafana-base
-    image: ${GRAFANA_IMAGE:-grafana/grafana:13.1.1}
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-    volumes:
-      # Data source auto-configuration
-      # Same for data source: "datasource.yml" not "yaml"
-      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yml:ro
-      # Dashboard loader configuration
-      # Same for data source: "provider.yml" not "yaml"
-      - ./grafana/provider.yaml:/etc/grafana/provisioning/dashboards/provider.yml:ro
-      # The actual dashboard file schema
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-    depends_on:
-      - prometheus
-
-volumes:
-  prometheus-data:
-  seq-data:
+networks:
+  observability:
+    external: true
+    name: architecture-labs-observability

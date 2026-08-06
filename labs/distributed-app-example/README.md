@@ -24,14 +24,16 @@ Browser -> React dashboard -> .NET API gateway
                               |-> Python inventory service (gRPC)
                               `-> RabbitMQ -> Python worker
 
-.NET gateway + Python services -> OpenTelemetry Collector -> Jaeger (traces)
-                                                    `------> Prometheus -> Grafana (metrics)
+.NET gateway + Python services -- shared network --> distributed-app-collector
+                                                     |-> Jaeger (traces)
+                                                     `-> Prometheus -> Grafana (metrics)
 ```
 
 ## Prerequisites
 
 - Docker Engine with Docker Compose v2
-- Enough local resources to run eleven containers
+- The standalone stack under `shared/observability` running first
+- Enough local resources to run this lab and the shared support services
 
 The example file contains local demonstration values. Its credentials and open ports are not
 suitable for production or a shared environment.
@@ -52,14 +54,21 @@ no application fallback values.
 `VITE_API_BASE_URL` is embedded into the browser bundle when the dashboard image is built. Rebuild
 `typescript-dashboard` after changing it.
 
-The OpenTelemetry Collector, Prometheus, Grafana, and Jaeger extend reusable container baselines
-under `shared/compose/observability`. Their pipelines, scrape targets, provisioning, dashboard,
-host ports, and application instrumentation remain in this lab because they define the
-experiment's telemetry behavior.
+The Collector, Prometheus, Grafana, Jaeger, provisioning, and dashboard live under
+`shared/observability`. This lab owns its application instrumentation and the required Collector
+URL. The services communicate through the external `architecture-labs-observability` network.
 
 ## Run
 
-Run commands from this directory:
+Start the support stack first:
+
+```bash
+cd ../../shared/observability
+cp .env.example .env
+docker compose up -d
+```
+
+Then run the lab from this directory:
 
 ```bash
 docker compose --env-file .env.example config --quiet
@@ -76,8 +85,8 @@ curl http://127.0.0.1:5242/products/1
 
 - Dashboard: <http://127.0.0.1:5173>
 - Jaeger: <http://127.0.0.1:16686>
-- Prometheus: <http://127.0.0.1:19090>
-- Grafana: <http://127.0.0.1:13000> (credentials from `.env`)
+- Prometheus: <http://127.0.0.1:9090>
+- Grafana: <http://127.0.0.1:3000> (credentials from `shared/observability/.env`)
 - RabbitMQ management: <http://127.0.0.1:15672> (credentials from `.env`)
 
 Grafana provisions Prometheus and Jaeger data sources plus the **Distributed App Telemetry
@@ -91,8 +100,8 @@ Stop the lab without deleting persisted data:
 docker compose down
 ```
 
-The following cleanup is destructive and deletes this lab's PostgreSQL, Redis, and Prometheus
-volumes:
+The following cleanup is destructive and deletes only this lab's PostgreSQL and Redis volumes. It
+does not delete shared telemetry storage:
 
 ```bash
 docker compose down --volumes
@@ -101,6 +110,9 @@ docker compose down --volumes
 ## Validation
 
 ```bash
+cd ../../shared/observability
+docker compose --env-file .env.example config --quiet
+cd ../../labs/distributed-app-example
 docker compose --env-file .env.example config --quiet
 docker compose build
 git diff --check
@@ -124,7 +136,8 @@ provisioned Grafana dashboard reports telemetry traffic.
 
 - The end-to-end workflow has not yet been revalidated after migration.
 - The dashboard API URL and host ports are fixed for local development.
-- PostgreSQL, Redis, RabbitMQ, and observability endpoints are exposed without production controls.
+- PostgreSQL, Redis, RabbitMQ, and shared observability endpoints are local-only and lack
+  production controls.
 - Several upstream container tags and application dependencies need a deliberate version and
   reproducibility review before this lab is considered complete.
 - There is no automated smoke test, workload, captured result set, or evidence-backed conclusion.

@@ -3,16 +3,15 @@ name: architecture-labs-distributed-app-example
 networks:
   app-network:
     driver: bridge
+  observability:
+    external: true
+    name: architecture-labs-observability
 
 volumes:
   postgres_data_v1:
   redis_data:
-  prometheus_data:
 
 services:
-  #----------------------
-  # Databases & storage
-  #----------------------
   postgres:
     image: postgres:18-alpine
     container_name: architecture-labs-distributed-postgres
@@ -42,14 +41,11 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  #----------------------
-  # Async message queues
-  #----------------------
   rabbitmq:
     image: rabbitmq:4.3.2-management-alpine
     container_name: architecture-labs-distributed-rabbitmq
@@ -62,86 +58,11 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
       timeout: 10s
       retries: 5
 
-  #----------------------
-  # Async message queues
-  #----------------------
-  jaeger:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: jaeger-base
-    image: jaegertracing/jaeger:2.19.0
-    container_name: architecture-labs-distributed-jaeger
-    ports:
-      - "${JAEGER_HOST_PORT:?Set JAEGER_HOST_PORT in .env}:16686"
-    networks:
-      - app-network
-
-  otel-collector:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: otel-collector-base
-    image: otel/opentelemetry-collector-contrib:0.156.0
-    container_name: architecture-labs-distributed-otel-collector
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
-    ports:
-      - "${OTEL_GRPC_HOST_PORT:?Set OTEL_GRPC_HOST_PORT in .env}:4317"
-      - "${OTEL_HTTP_HOST_PORT:?Set OTEL_HTTP_HOST_PORT in .env}:4318"
-    expose:
-      - "8888"
-      - "8889"
-    networks:
-      - app-network
-    depends_on:
-      - jaeger
-
-  prometheus:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: prometheus-base
-    container_name: architecture-labs-distributed-prometheus
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=7d
-    volumes:
-      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "${PROMETHEUS_HOST_PORT:?Set PROMETHEUS_HOST_PORT in .env}:9090"
-    networks:
-      - app-network
-    depends_on:
-      - otel-collector
-
-  grafana:
-    extends:
-      file: ../../shared/compose/observability/service.yaml
-      service: grafana-base
-    container_name: architecture-labs-distributed-grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER in .env}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
-    volumes:
-      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
-      - ./grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports:
-      - "${GRAFANA_HOST_PORT:?Set GRAFANA_HOST_PORT in .env}:3000"
-    networks:
-      - app-network
-    depends_on:
-      - prometheus
-      - jaeger
-
-  #----------------------
-  # CUSTOM APPLICATION RUNTIMES
-  #----------------------
   python-grpc-inventory:
     build: ./PythonInventoryService
     container_name: architecture-labs-distributed-python-grpc
@@ -150,13 +71,10 @@ services:
       - "50051"
     networks:
       - app-network
+      - observability
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:?Set OTEL_EXPORTER_OTLP_ENDPOINT in .env}
-    depends_on:
-      otel-collector:
-        condition: service_started
     healthcheck:
-      # Simple container execution check, can be advanced to nc -z local mock probes
       test: ["CMD-SHELL", "python -c 'import socket; s = socket.socket(); s.connect((\"127.0.0.1\", 50051))'"]
       interval: 5s
       timeout: 5s
@@ -168,6 +86,7 @@ services:
     command: python worker.py
     networks:
       - app-network
+      - observability
     environment:
       RABBITMQ_HOST: ${RABBITMQ_HOST:?Set RABBITMQ_HOST in .env}
       RABBITMQ_PORT: ${RABBITMQ_PORT:?Set RABBITMQ_PORT in .env}
@@ -177,11 +96,9 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-      otel-collector:
-        condition: service_started      
 
   dotnet-api-gateway:
-    build: 
+    build:
       context: .
       dockerfile: DotnetApiGateway/Dockerfile
     container_name: architecture-labs-distributed-dotnet-gateway
@@ -189,6 +106,7 @@ services:
       - "${API_HOST_PORT:?Set API_HOST_PORT in .env}:8080"
     networks:
       - app-network
+      - observability
     environment:
       ConnectionStrings__PostgreSQL: Host=${POSTGRES_HOST:?Set POSTGRES_HOST in .env};Port=${POSTGRES_PORT:?Set POSTGRES_PORT in .env};Database=${POSTGRES_DB:?Set POSTGRES_DB in .env};Username=${POSTGRES_USER:?Set POSTGRES_USER in .env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       ConnectionStrings__Redis: ${REDIS_ENDPOINT:?Set REDIS_ENDPOINT in .env}
@@ -204,7 +122,7 @@ services:
       redis:
         condition: service_healthy
       python-grpc-inventory:
-        condition: service_healthy   
+        condition: service_healthy
 
   typescript-dashboard:
     build:
@@ -217,4 +135,4 @@ services:
     networks:
       - app-network
     depends_on:
-      - dotnet-api-gateway     
+      - dotnet-api-gateway

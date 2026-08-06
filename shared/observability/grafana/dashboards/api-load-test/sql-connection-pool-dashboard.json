@@ -256,7 +256,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus" },
-          "expr": "up{job=\"csharp-api\"}",
+          "expr": "up{job=\"api-load-test\"}",
           "legendFormat": "API up"
         }
       ],
@@ -491,7 +491,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus" },
-          "expr": "up{job=\"otel-collector\"}",
+          "expr": "up{job=\"api-load-test-collector\"}",
           "legendFormat": "Collector available (1=yes)"
         },
         {

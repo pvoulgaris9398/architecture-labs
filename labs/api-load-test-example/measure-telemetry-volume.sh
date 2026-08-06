@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+observability_dir="${OBSERVABILITY_DIR:-../../shared/observability}"
+observability_env="${OBSERVABILITY_ENV_FILE:-${observability_dir}/.env}"
+if [[ ! -f "${observability_env}" ]]; then
+  printf 'Missing observability environment file: %s\n' "${observability_env}" >&2
+  exit 2
+fi
+observability_compose=(
+  docker compose
+  --project-directory "${observability_dir}"
+  --env-file "${observability_env}"
+  -f "${observability_dir}/docker-compose.yaml"
+)
+
 if [[ "${RUN_LOAD_TESTS:-}" != "1" ]]; then
   printf 'This script runs a full k6 profile. Re-run with RUN_LOAD_TESTS=1 after reading doc/observability-validation.md.\n' >&2
   exit 2
@@ -88,7 +101,7 @@ capture_collector_metrics() {
 }
 
 seq_size_kib() {
-  MSYS_NO_PATHCONV=1 docker compose exec -T seq du -sk /data | while read -r size _; do
+  MSYS_NO_PATHCONV=1 "${observability_compose[@]}" exec -T seq du -sk /data | while read -r size _; do
     printf '%s\n' "${size}"
     break
   done
@@ -130,7 +143,7 @@ if [[ "${script}" == 'load-test-scan.js' ]]; then
   verify_index_state "${index_state}"
 fi
 
-collector_id_before="$(docker compose ps -q otel-collector)"
+collector_id_before="$("${observability_compose[@]}" ps -q api-load-test-collector)"
 if [[ -z "${collector_id_before}" ]]; then
   printf 'The Collector container is not running.\n' >&2
   exit 1
@@ -156,7 +169,7 @@ fi
 
 capture_collector_metrics "${results_dir}/collector-after.prom"
 seq_kib_after="$(seq_size_kib)"
-collector_id_after="$(docker compose ps -q otel-collector)"
+collector_id_after="$("${observability_compose[@]}" ps -q api-load-test-collector)"
 
 if [[ "${collector_id_before}" != "${collector_id_after}" ]]; then
   printf 'The Collector restarted during the run; counter deltas would be invalid. Raw evidence remains in %s.\n' \

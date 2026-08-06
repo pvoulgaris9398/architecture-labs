@@ -9,6 +9,8 @@ This file extends the repository-root `AGENTS.md`. Run lab commands from this di
 - Treat the values in `.env.example` and exposed endpoints as local-only demonstrations.
 - Keep `.env.example`, Compose variable requirements, application startup validation, and README
   configuration instructions synchronized. Required application settings must not have fallbacks.
-- Do not run `docker compose down --volumes` without explicit approval.
+- The lab depends on the external `architecture-labs-observability` network created by
+  `shared/observability`; do not reintroduce observability services into this Compose file.
+- Do not run `docker compose down --volumes` in either project without explicit approval.
 - Validate Compose changes with `docker compose --env-file .env.example config --quiet` and source changes with the
   component-specific build before claiming the end-to-end flow works.

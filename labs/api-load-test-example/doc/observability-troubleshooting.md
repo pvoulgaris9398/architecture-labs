@@ -24,12 +24,16 @@ the Collector is stopped, and k6 metrics can reach Prometheus even when no API t
 
 ```bash
 docker compose ps
-docker compose logs --tail 100 api-service otel-collector seq prometheus grafana
+docker compose logs --tail 100 api-service
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env \
+  logs --tail 100 api-load-test-collector seq prometheus grafana
 ```
 
 Expected:
 
-- `api-service`, `otel-collector`, `seq`, `prometheus`, and `grafana` are running.
+- `api-service` is running in the lab project; `api-load-test-collector`, `seq`, `prometheus`, and
+  `grafana` are running in the shared project.
 - API logs contain `Database seeding complete.` after initial startup.
 - Collector logs do not contain configuration parsing or component startup failures.
 - Prometheus logs do not show repeated scrape or remote-write receiver errors.
@@ -66,15 +70,16 @@ Open `http://127.0.0.1:9090/targets`, or query both required jobs:
 
 ```bash
 curl --get --silent --show-error \
-  --data-urlencode 'query=up{job=~"csharp-api|otel-collector"}' \
+  --data-urlencode 'query=up{job=~"api-load-test|api-load-test-collector"}' \
   http://127.0.0.1:9090/api/v1/query
 ```
 
-Expected: `csharp-api` and `otel-collector` each report `1`. The optional `windows-host-os` target
+Expected: `api-load-test` and `api-load-test-collector` each report `1`. The optional `windows-host-os` target
 may be down when windows_exporter is not installed; that does not prevent API or Collector metrics.
 
 If the API target is down but its host health check succeeds, inspect container-to-container
-connectivity and `prometheus/prometheus.yaml`. Prometheus must scrape `api-service:8080`, not the
+connectivity and `shared/observability/prometheus/prometheus.yaml`. Prometheus must scrape
+`api-service:8080` over the external network, not the
 host's `127.0.0.1:18080` address.
 
 ## 4. Verify API-to-Collector ingestion
@@ -124,7 +129,8 @@ curl -i \
   http://127.0.0.1:18080/v1/not-found
 
 docker compose logs --tail 100 api-service
-docker compose logs --tail 100 otel-collector seq
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env logs --tail 100 api-load-test-collector seq
 ```
 
 Expected:
@@ -171,8 +177,9 @@ docker compose logs -f api-service
 ```
 
 To inspect individual telemetry records at the Collector, temporarily change the debug exporter in
-`otel-collector/config.yaml` to `verbosity: detailed`, increase `sampling_initial`, and set
-`sampling_thereafter: 1`; then recreate `otel-collector`. Restore the committed configuration
+`shared/observability/collectors/api-load-test.yaml` to `verbosity: detailed`, increase
+`sampling_initial`, and set `sampling_thereafter: 1`; then recreate `api-load-test-collector` from
+the shared project. Restore the committed configuration
 before any load test. Detailed Collector output and successful-request logging can generate an
 enormous amount of I/O and materially distort results.
 
@@ -219,7 +226,7 @@ In Grafana:
 
 1. Open **Connections > Data sources > Prometheus** and run **Save & test**.
 2. Open **Explore**, select Prometheus, and query `up`.
-3. Confirm both `csharp-api` and `otel-collector` jobs appear.
+3. Confirm both `api-load-test` and `api-load-test-collector` jobs appear.
 4. Use a time range that includes the test and allow for the five-second scrape interval.
 
 An empty panel can mean no matching events, a sampling decision, an incorrect time range, or a
@@ -229,10 +236,12 @@ concluding that the application emitted nothing.
 ## 10. Verify Collector and Seq outage isolation
 
 ```bash
-docker compose stop otel-collector
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env stop api-load-test-collector
 curl --fail http://127.0.0.1:18080/health
 curl --fail http://127.0.0.1:18080/metrics >/dev/null
-docker compose start otel-collector
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env start api-load-test-collector
 curl --fail http://127.0.0.1:13133
 ```
 
@@ -243,9 +252,11 @@ or retry capacity. That loss is preferable to blocking application requests.
 Repeat the isolation check for Seq:
 
 ```bash
-docker compose stop seq
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env stop seq
 curl --fail http://127.0.0.1:18080/health
-docker compose start seq
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env start seq
 curl --fail http://127.0.0.1:5341/health
 ```
 

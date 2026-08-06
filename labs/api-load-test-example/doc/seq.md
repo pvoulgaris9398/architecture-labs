@@ -15,16 +15,18 @@ This lab's tighter operational target is 5 GiB.
 
 ## First start and retention
 
-Copy `.env.example` to `.env`, replace the Seq password placeholder, and start the stack:
+Configure and start the shared stack from the repository root:
 
 ```bash
+cd shared/observability
 cp .env.example .env
 docker compose up -d --build
 curl --fail http://127.0.0.1:5341/health
 ```
 
-Open `http://127.0.0.1:5341` and sign in using `SEQ_ADMIN_USER` and `SEQ_ADMIN_PASSWORD`. The
-`SEQ_FIRSTRUN_*` values are applied only when `seq-data` is initialized; changing them later does
+Open `http://127.0.0.1:5341` and sign in using `SEQ_ADMIN_USER` and `SEQ_ADMIN_PASSWORD` from
+`shared/observability/.env`. The
+`SEQ_FIRSTRUN_*` values are applied only when `seq_data` is initialized; changing them later does
 not change an existing account password.
 
 Seq retention policies are stored application objects, not Docker environment settings. On the
@@ -34,7 +36,7 @@ least expensive policy for Seq to process. Confirm the policy appears before run
 The more selective 24-hour, three-day, and seven-day tiers in `observability-conventions.md` are a
 Step 9 refinement; the all-events policy supplies the initial hard bound.
 
-The `seq-data` volume persists events, traces, the admin account, and the retention policy across
+The `seq_data` volume persists events, traces, the admin account, and the retention policy across
 ordinary `docker compose down` and container recreation. The Compose volume is not a byte quota.
 Stop generating load and inspect storage if it approaches the 5 GiB lab target.
 
@@ -53,7 +55,7 @@ memory without limit. Prometheus scraping and API request handling remain indepe
 
 The Seq host mapping binds the UI/API only on `127.0.0.1:5341`; the Collector uses Seq's internal
 ingestion-only port 5341. This unauthenticated internal ingestion path is acceptable only on this
-isolated local Compose network. It is not a production security design.
+isolated local observability network. It is not a production security design.
 
 ## Verify logs, traces, and correlation
 
@@ -96,7 +98,8 @@ span identifiers are `@TraceId` and `@SpanId`; application scope fields remain s
 Routine shutdown preserves Seq data:
 
 ```bash
-docker compose down
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env down
 ```
 
 Resetting Seq is destructive. Follow the exact volume inspection and removal procedure in

@@ -28,7 +28,7 @@
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
       "id": 3,
       "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"], "values": false } },
-      "targets": [{ "expr": "up{job=~\"otel-collector|distributed-app-metrics\"}", "legendFormat": "{{job}}" }],
+      "targets": [{ "expr": "up{job=~\"distributed-app-collector|distributed-app-metrics\"}", "legendFormat": "{{job}}" }],
       "title": "Telemetry endpoints up",
       "type": "stat"
     }

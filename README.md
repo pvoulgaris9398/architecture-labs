@@ -38,10 +38,10 @@ architecture-labs/
 Directories will be added only when their first concrete use is introduced. Shared code should
 contain reusable mechanics—not assumptions that couple otherwise independent experiments.
 
-Reusable Compose baselines currently live under `shared/compose`. The observability baselines
-standardize OpenTelemetry Collector, Prometheus, Grafana, Jaeger, and Seq container mechanics
-while each lab retains its own telemetry pipeline, provisioning, backend, ports, and
-instrumentation. See
+Reusable service baselines live under `shared/compose`. The independently runnable
+`shared/observability` project owns the repository's local collectors, Prometheus, Grafana, Seq,
+Jaeger, telemetry storage, and dashboard provisioning. Labs retain their application
+instrumentation and connect over a named external network. See
 [ADR 0003](docs/decisions/0003-shared-observability-boundary.md) for the boundary and rationale.
 
 ## Lab expectations
@@ -63,7 +63,7 @@ Each lab should document:
 | Lab | Question | Technologies | Status |
 | --- | --- | --- | --- |
 | [API load test](labs/api-load-test-example/README.md) | How do SQL query latency and indexing affect API latency and connection-pool pressure? | .NET 10, SQL Server, k6, OpenTelemetry, Prometheus, Grafana | In progress |
-| [Distributed app example](labs/distributed-app-example/README.md) | How do cache-aside reads, synchronous gRPC calls, and asynchronous messages interact in a polyglot system? | React, .NET 10, Python, PostgreSQL, Redis, RabbitMQ, OpenTelemetry, Jaeger | In progress |
+| [Distributed app example](labs/distributed-app-example/README.md) | How do cache-aside reads, synchronous gRPC calls, and asynchronous messages interact in a polyglot system? | React, .NET 10, Python, PostgreSQL, Redis, RabbitMQ, OpenTelemetry, Prometheus, Grafana, Jaeger | In progress |
 
 The first lab was migrated from the standalone `api-load-test-example` repository. Its
 [source provenance](labs/api-load-test-example/SOURCE.md) records the originating repository and

@@ -63,30 +63,35 @@ The metrics-only debug exporter has a separate bounded 512-batch queue and no ne
 
 | Purpose | Container endpoint | Default host endpoint |
 | --- | --- | --- |
-| OTLP gRPC receiver | `otel-collector:4317` | `127.0.0.1:14317` |
-| OTLP HTTP receiver | `otel-collector:4318` | `127.0.0.1:14318` |
-| Health extension | `otel-collector:13133` | `127.0.0.1:13133` |
-| Internal Prometheus metrics | `otel-collector:8888/metrics` | `127.0.0.1:18888/metrics` |
+| OTLP gRPC receiver | `api-load-test-collector:4317` | `127.0.0.1:14317` |
+| OTLP HTTP receiver | `api-load-test-collector:4318` | `127.0.0.1:14318` |
+| Health extension | `api-load-test-collector:13133` | `127.0.0.1:13133` |
+| Internal Prometheus metrics | `api-load-test-collector:8888/metrics` | `127.0.0.1:18888/metrics` |
 
-Host ports are configurable in `.env`; internal Compose endpoints remain unchanged.
+Host ports are configured in `shared/observability/.env`; internal endpoints use the external
+`architecture-labs-observability` network.
 The Collector exports logs and traces to Seq's internal ingestion endpoint at
 `http://seq:5341/ingest/otlp`; the Collector appends `/v1/logs` or `/v1/traces` automatically.
 
 ## Start and verify
 
 ```bash
+cd ../../shared/observability
+docker compose up -d
+cd ../../labs/api-load-test-example
 docker compose up -d --build
 curl --fail http://127.0.0.1:13133
 curl --fail http://127.0.0.1:18888/metrics
 curl --fail http://127.0.0.1:18080/health
 curl --fail http://127.0.0.1:5341/health
-docker compose logs --tail 100 otel-collector
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env logs --tail 100 api-load-test-collector
 ```
 
 In Prometheus, verify both scrape targets are up:
 
 ```promql
-up{job=~"csharp-api|otel-collector"}
+up{job=~"api-load-test|api-load-test-collector"}
 ```
 
 Useful Collector metrics include receiver accepted/refused records, exporter queue size/capacity,
@@ -98,9 +103,11 @@ may reflect Prometheus conventions; inspect the stored names before adding dashb
 This is a lightweight resilience check, not a load test:
 
 ```bash
-docker compose stop otel-collector
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env stop api-load-test-collector
 curl --fail http://127.0.0.1:18080/health
-docker compose start otel-collector
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env start api-load-test-collector
 curl --fail http://127.0.0.1:13133
 ```
 

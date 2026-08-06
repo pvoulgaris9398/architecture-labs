@@ -1,4 +1,4 @@
-# ADR 0003: Share observability service mechanics, not experiment configuration
+# ADR 0003: Run a standalone shared observability platform
 
 - Status: Accepted
 - Date: 2026-08-05
@@ -11,32 +11,36 @@ collector health and metrics. The distributed-app lab sends traces to Jaeger and
 metrics to Prometheus for Grafana dashboards. Their application instrumentation, processors,
 exporters, ports, and backends are therefore not interchangeable.
 
-Copying the stable collector launch mechanics invites drift, while moving the complete pipelines
-or language-specific instrumentation into one shared package would couple otherwise independent
-labs and obscure variables that affect experimental results.
+Embedding complete support stacks in each lab duplicates long-running services, credentials,
+ports, and retained data. A shared runtime is desirable, but combining both telemetry policies in
+one Collector would couple otherwise independent experiments and obscure variables that affect
+their results.
 
 ## Decision
 
-Create `shared/compose/observability/service.yaml` with base services for the OpenTelemetry
-Collector, Prometheus, Grafana, Jaeger, and Seq. Consuming labs use Compose `extends` and retain
-their collector configuration, ports, dependencies, resource limits, provisioning, storage, and
-credentials locally. A lab may deliberately override the baseline image when validating a
-different pinned version.
+Run `shared/observability` as a standalone Compose project containing Prometheus, Grafana, Seq,
+Jaeger, persistent telemetry volumes, provisioning, dashboards, and two collectors. Preserve one
+collector per lab policy: `api-load-test-collector` and `distributed-app-collector`.
+
+The support project creates the named `architecture-labs-observability` Docker network. Consuming
+lab services join it as an external network and use Docker DNS URLs supplied through their `.env`
+files. Prometheus reaches the API load-test service over that network and continues scraping its
+`/metrics` endpoint directly.
 
 Standardize the collector's in-container configuration path as
 `/etc/otelcol-contrib/config.yaml`. Keep .NET, Python, and other SDK setup with the application that
 owns it because instrumentation is compiled, versioned, and validated with that application.
 
-Do not centralize scrape targets, collector pipelines, dashboards, data sources, backend retention,
-or application telemetry. Those settings affect a lab's hypothesis or investigation workflow.
-Revisit a complete shared subsystem only after multiple labs consume an equivalent stack largely
-unchanged.
+Keep application SDK instrumentation in the owning lab. Keep distinct collector configurations
+and lab-named Grafana folders inside the support project so shared lifecycle does not imply a
+shared telemetry policy.
 
 ## Consequences
 
-- Common container images and safe restart behavior have one maintained definition.
-- Collector startup behavior and configuration-path conventions have one maintained definition.
-- Each lab remains understandable and independently removable.
-- Collector pipelines and backend choices remain explicit experimental variables.
-- A shared edit requires configuration validation in both consuming labs.
-- Reuse is intentionally smaller than a universal observability stack.
+- Observability services and retained data have an independent lifecycle.
+- Labs no longer duplicate backend containers, ports, or credentials.
+- Collector pipelines and backend choices remain explicit per-lab policies.
+- The support stack must start before a lab because Compose cannot create an external network.
+- A support-stack outage affects telemetry for every connected lab but should not stop application
+  request processing.
+- A shared configuration edit requires validation of the support stack and both consuming labs.

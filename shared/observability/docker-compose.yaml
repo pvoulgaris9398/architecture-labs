@@ -1,0 +1,109 @@
+name: architecture-labs-observability
+
+networks:
+  observability:
+    name: architecture-labs-observability
+
+volumes:
+  grafana_data:
+  prometheus_data:
+  seq_data:
+
+services:
+  seq:
+    image: ${SEQ_IMAGE:?Set SEQ_IMAGE in .env}
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINUSERNAME: ${SEQ_ADMIN_USER:?Set SEQ_ADMIN_USER in .env}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:?Set SEQ_ADMIN_PASSWORD in .env}
+    volumes:
+      - seq_data:/data
+    ports:
+      - "127.0.0.1:${SEQ_HOST_PORT:?Set SEQ_HOST_PORT in .env}:80"
+    networks:
+      - observability
+    restart: unless-stopped
+
+  jaeger:
+    image: ${JAEGER_IMAGE:?Set JAEGER_IMAGE in .env}
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:${JAEGER_HOST_PORT:?Set JAEGER_HOST_PORT in .env}:16686"
+    networks:
+      - observability
+    restart: unless-stopped
+
+  api-load-test-collector:
+    image: ${API_OTEL_COLLECTOR_IMAGE:?Set API_OTEL_COLLECTOR_IMAGE in .env}
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+    volumes:
+      - ./collectors/api-load-test.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "${API_OTEL_GRPC_HOST_PORT:?Set API_OTEL_GRPC_HOST_PORT in .env}:4317"
+      - "${API_OTEL_HTTP_HOST_PORT:?Set API_OTEL_HTTP_HOST_PORT in .env}:4318"
+      - "${API_OTEL_HEALTH_HOST_PORT:?Set API_OTEL_HEALTH_HOST_PORT in .env}:13133"
+      - "${API_OTEL_METRICS_HOST_PORT:?Set API_OTEL_METRICS_HOST_PORT in .env}:8888"
+    mem_limit: 512m
+    networks:
+      - observability
+    depends_on:
+      - seq
+    restart: unless-stopped
+
+  distributed-app-collector:
+    image: ${DISTRIBUTED_OTEL_COLLECTOR_IMAGE:?Set DISTRIBUTED_OTEL_COLLECTOR_IMAGE in .env}
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+    volumes:
+      - ./collectors/distributed-app.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "${DISTRIBUTED_OTEL_GRPC_HOST_PORT:?Set DISTRIBUTED_OTEL_GRPC_HOST_PORT in .env}:4317"
+      - "${DISTRIBUTED_OTEL_HTTP_HOST_PORT:?Set DISTRIBUTED_OTEL_HTTP_HOST_PORT in .env}:4318"
+    expose:
+      - "8888"
+      - "8889"
+    networks:
+      - observability
+    depends_on:
+      - jaeger
+    restart: unless-stopped
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:?Set PROMETHEUS_IMAGE in .env}
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_HOST_PORT:?Set PROMETHEUS_HOST_PORT in .env}:9090"
+    networks:
+      - observability
+    depends_on:
+      - api-load-test-collector
+      - distributed-app-collector
+    restart: unless-stopped
+
+  grafana:
+    image: ${GRAFANA_IMAGE:?Set GRAFANA_IMAGE in .env}
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER in .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+    volumes:
+      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_HOST_PORT:?Set GRAFANA_HOST_PORT in .env}:3000"
+    networks:
+      - observability
+    depends_on:
+      - prometheus
+      - jaeger
+    restart: unless-stopped

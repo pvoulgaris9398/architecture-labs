@@ -29,8 +29,8 @@ This file applies to `labs/api-load-test-example` and extends the Architecture L
   instrumentation.
 - `load-test.js` exercises the artificial-delay connection-pool scenario.
 - `load-test-scan.js` compares the same customer-order query before and after adding an index.
-- `docker-compose.yaml` runs SQL Server, the API, Prometheus, and Grafana.
-- `grafana/` and `prometheus/` contain provisioned observability configuration.
+- `docker-compose.yaml` runs SQL Server and the API and joins the external observability network.
+- `../../shared/observability` owns collectors, backends, provisioning, and dashboards.
 - `doc/` contains the detailed experiment and proposed SQL Server-side monitoring guidance.
 
 ## Experiment invariants
@@ -92,5 +92,7 @@ git diff --check
 - Do not run the actual k6 load tests automatically: they intentionally generate heavy local load.
 - Do not run `docker compose down --volumes` without explicit approval because it deletes local
   database state.
+- Do not reintroduce observability services into the lab Compose file. Start and validate the
+  standalone stack under `shared/observability` first.
 - If Docker validation emits only a sandbox-related warning about the user's Docker config but
   exits successfully, report the warning rather than treating the configuration as invalid.

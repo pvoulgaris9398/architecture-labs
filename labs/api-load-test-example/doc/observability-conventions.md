@@ -108,30 +108,31 @@ untracked unless intentionally reduced to a safe summary.
 Routine shutdown preserves all data:
 
 ```bash
-docker compose down
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env down
 ```
 
-Inspect the lab's volumes and their resolved names before deleting anything:
+Inspect the shared stack's volumes and their resolved names before deleting anything:
 
 ```bash
-docker volume ls --filter label=com.docker.compose.project=api-load-test-example
-docker volume inspect api-load-test-example_prometheus-data
+docker volume ls --filter label=com.docker.compose.project=architecture-labs-observability
+docker volume inspect architecture-labs-observability_prometheus_data
 ```
 
-When Seq is implemented, its Compose volume must be named `seq-data`, which normally resolves to
-`api-load-test-example_seq-data`. To reset one telemetry backend, first stop the stack, verify the
-exact volume belongs to this lab, and remove only that explicit volume:
+To reset one telemetry backend, first stop the shared stack, verify the exact volume belongs to the
+support project, and remove only that explicit volume:
 
 ```bash
-docker compose down
-docker volume inspect api-load-test-example_seq-data
-docker volume rm api-load-test-example_seq-data
+docker compose -f ../../shared/observability/docker-compose.yaml \
+  --env-file ../../shared/observability/.env down
+docker volume inspect architecture-labs-observability_seq_data
+docker volume rm architecture-labs-observability_seq_data
 ```
 
 Replace the final two commands with the verified Prometheus volume name only when intentionally
-resetting metrics. Do not use `docker compose down --volumes` for routine cleanup: it removes every
-Compose-managed volume, including Prometheus, Seq, and any database volume introduced later. Volume
-deletion is irreversible unless the data was exported separately.
+resetting metrics. Do not use `docker compose down --volumes` for routine cleanup: in the shared
+project it removes Prometheus, Grafana, and Seq data for every lab. Volume deletion is irreversible
+unless the data was exported separately.
 
 ## References
 

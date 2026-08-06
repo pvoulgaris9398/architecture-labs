@@ -5,8 +5,8 @@
 > See [SOURCE.md](SOURCE.md) for migration provenance.
 
 This project demonstrates how API latency, SQL query performance, and ADO.NET connection-pool
-behavior interact under concurrent load. It runs an ASP.NET Core API, SQL Server, an OpenTelemetry
-Collector, Seq, Prometheus, and Grafana locally with Docker Compose and uses k6 to generate traffic.
+behavior interact under concurrent load. It runs an ASP.NET Core API and SQL Server locally, uses
+the standalone observability stack under `shared/observability`, and uses k6 to generate traffic.
 
 See [next-steps.md](next-steps.md) for the ordered checklist to add correlated logs, traces,
 request context, Grafana navigation, and an analysis runbook.
@@ -59,9 +59,10 @@ winget install --id GrafanaLabs.k6 -e
 ## Configure and start
 
 Run the following commands from `labs/api-load-test-example` in the Architecture Labs working
-copy. This lab uses the shared SQL Server, OpenTelemetry Collector, Seq, Prometheus, and Grafana
-service baselines under `shared/compose` while retaining its ports, application, telemetry
-pipelines, provisioning, and experiment-specific configuration locally.
+copy. This lab uses the shared SQL Server baseline and connects the API to the standalone
+observability stack through the external `architecture-labs-observability` network. The shared
+stack preserves this lab's dedicated Collector pipeline, direct Prometheus scrape, Seq backend,
+and Grafana dashboard.
 
 Copy the example environment file and replace its placeholder passwords:
 
@@ -69,7 +70,18 @@ Copy the example environment file and replace its placeholder passwords:
 cp .env.example .env
 ```
 
-The local `.env` file is ignored by Git. Do not commit real passwords. Then start the stack:
+The local `.env` file is ignored by Git. Do not commit real passwords. Start the shared support
+stack first from the repository root:
+
+```bash
+cd shared/observability
+cp .env.example .env
+docker compose up -d
+cd ../../labs/api-load-test-example
+```
+
+The shared stack's `.env` owns Grafana and Seq credentials and all observability ports. Then start
+the lab:
 
 ```bash
 docker compose up --build -d
@@ -94,11 +106,11 @@ with `SETUP_TIMEOUT` if the readiness window is increased beyond that.
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
-Sign in to Grafana using `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` from `.env`. Sign in to
-Seq using `SEQ_ADMIN_USER` and `SEQ_ADMIN_PASSWORD`. Seq uses the proprietary free Individual
-license in this local lab; its EULA is accepted by the Compose configuration and only one person
-may access the web interface. See [the Seq operating notes](doc/seq.md) before the first run,
-including the required 14-day retention-policy setup.
+Sign in to Grafana and Seq using credentials from `shared/observability/.env`. Seq uses the
+proprietary free Individual license in this local lab; its EULA is accepted by the shared Compose
+configuration and only one person may access the web interface. See
+[the Seq operating notes](doc/seq.md) before the first run, including the required 14-day
+retention-policy setup.
 
 ## Run the connection-pool test
 
@@ -184,9 +196,10 @@ and SQL-side diagnostics.
 
 ## Observability
 
-Prometheus scrapes the API and Collector every five seconds. Grafana automatically provisions the
-Prometheus data source and the bundled SQL connection-pool dashboard. The API exposes ASP.NET Core
-and SqlClient metrics, including custom gauges bridged from all 16 SqlClient EventCounters.
+The shared Prometheus service scrapes the API and its dedicated Collector every five seconds over
+the external observability network. Shared Grafana provisions the Prometheus data source and this
+lab's SQL connection-pool dashboard. The API exposes ASP.NET Core and SqlClient metrics, including
+custom gauges bridged from all 16 SqlClient EventCounters.
 
 The API sends traces, logs, and an additional OTLP metric stream to the Collector asynchronously;
 Prometheus continues scraping the API directly, so existing metric names and dashboards do not
@@ -236,5 +249,5 @@ This stack is intended for isolated local experimentation. SQL Server is exposed
 the API management endpoints are unauthenticated, and TLS certificate validation is disabled for
 the database connection. Do not deploy this configuration to a shared or production environment.
 
-Container versions are configured in `.env.example` rather than using mutable tags. Update those
-values deliberately when testing a newer release.
+Lab container versions are configured in this lab's `.env.example`; observability versions are in
+`shared/observability/.env.example`. Update either set deliberately when testing a newer release.
