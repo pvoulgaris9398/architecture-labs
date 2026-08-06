@@ -1,0 +1,14 @@
+name: architecture-labs-realtime-websocket
+
+services:
+
+  server:
+    build:
+      context: ./src/Server
+    container_name: architecture-labs-realtime-websocket-server
+
+    ports:
+      - "5000:8080"
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
