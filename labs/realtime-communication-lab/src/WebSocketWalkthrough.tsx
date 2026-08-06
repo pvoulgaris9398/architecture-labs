@@ -42,6 +42,7 @@ function formatPayload(value: unknown) {
 
 export default function WebSocketWalkthrough() {
   const socketRef = useRef<WebSocket | null>(null);
+  const consoleBodyRef = useRef<HTMLDivElement | null>(null);
   const nextLogId = useRef(1);
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -245,6 +246,23 @@ export default function WebSocketWalkthrough() {
     };
   }, []);
 
+  useEffect(() => {
+    const consoleBody = consoleBodyRef.current;
+    if (!consoleBody || logs.length === 0) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      consoleBody.scrollTo({
+        top: consoleBody.scrollHeight,
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [logs.length]);
+
   const isConnected = connectionState === 'connected';
 
   return (
@@ -426,7 +444,7 @@ export default function WebSocketWalkthrough() {
             </button>
           </div>
 
-          <div className="console-body" aria-live="polite">
+          <div className="console-body" ref={consoleBodyRef} aria-live="polite">
             {logs.length === 0 ? (
               <div className="empty-console">
                 <span aria-hidden="true">_</span>
@@ -434,7 +452,7 @@ export default function WebSocketWalkthrough() {
               </div>
             ) : (
               logs.map((entry) => (
-                <div className={`log-entry ${entry.kind}`} key={entry.id}>
+                <div className={`log-entry fresh-entry ${entry.kind}`} key={entry.id}>
                   <div className="log-meta">
                     <span>{entry.time}</span>
                     <span>{labels[entry.kind]}</span>
@@ -444,21 +462,33 @@ export default function WebSocketWalkthrough() {
                     <dl className="log-route">
                       <div>
                         <dt>From</dt>
-                        <dd>{entry.route.from}</dd>
+                        <dd className="tooltip-value" title={entry.route.from} tabIndex={0}>
+                          {entry.route.from}
+                        </dd>
                       </div>
                       <div>
                         <dt>To</dt>
-                        <dd>{entry.route.to}</dd>
+                        <dd className="tooltip-value" title={entry.route.to} tabIndex={0}>
+                          {entry.route.to}
+                        </dd>
                       </div>
                       {entry.route.via && (
                         <div>
                           <dt>Via</dt>
-                          <dd>{entry.route.via}</dd>
+                          <dd className="tooltip-value" title={entry.route.via} tabIndex={0}>
+                            {entry.route.via}
+                          </dd>
                         </div>
                       )}
                       <div className="route-endpoint">
                         <dt>Endpoint</dt>
-                        <dd>{entry.route.endpoint}</dd>
+                        <dd
+                          className="tooltip-value"
+                          title={entry.route.endpoint}
+                          tabIndex={0}
+                        >
+                          {entry.route.endpoint}
+                        </dd>
                       </div>
                     </dl>
                   )}

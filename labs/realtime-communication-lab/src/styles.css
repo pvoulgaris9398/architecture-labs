@@ -777,8 +777,24 @@ input:focus {
 }
 
 .log-entry {
+  --focus-color: 98, 232, 199;
+
+  position: relative;
   padding: 14px 18px 16px;
   border-bottom: 1px solid rgba(163, 180, 204, 0.09);
+}
+
+.log-entry.sent,
+.log-entry.http {
+  --focus-color: 105, 168, 255;
+}
+
+.log-entry.error {
+  --focus-color: 255, 143, 143;
+}
+
+.fresh-entry {
+  animation: console-entry-focus 4s ease-out both;
 }
 
 .log-entry:last-child {
@@ -861,6 +877,18 @@ input:focus {
   word-break: break-all;
 }
 
+.tooltip-value {
+  text-decoration: underline dotted rgba(158, 175, 196, 0.38);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.tooltip-value:focus-visible {
+  border-radius: 2px;
+  outline: 1px solid rgba(98, 232, 199, 0.62);
+  outline-offset: 3px;
+}
+
 .log-entry pre {
   overflow-x: auto;
   margin: 10px 0 0;
@@ -880,6 +908,29 @@ input:focus {
   font-size: 0.56rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+@keyframes console-entry-focus {
+  0%,
+  18% {
+    background: rgba(var(--focus-color), 0.14);
+    box-shadow:
+      inset 3px 0 0 rgba(var(--focus-color), 0.92),
+      inset 0 0 34px rgba(var(--focus-color), 0.055);
+  }
+
+  100% {
+    background: transparent;
+    box-shadow:
+      inset 3px 0 0 rgba(var(--focus-color), 0),
+      inset 0 0 34px rgba(var(--focus-color), 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fresh-entry {
+    animation: none;
+  }
 }
 
 @media (max-width: 960px) {
