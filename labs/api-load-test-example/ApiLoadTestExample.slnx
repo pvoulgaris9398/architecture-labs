@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/csharp-api/">
+    <Project Path="csharp-api/PoolMonitoringApi.csproj" />
+  </Folder>
+</Solution>

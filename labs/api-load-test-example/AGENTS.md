@@ -80,9 +80,9 @@ This file applies to `labs/api-load-test-example` and extends the Architecture L
 Run checks appropriate to the files changed. The standard validation sequence is:
 
 ```bash
-dotnet restore csharp-api/PoolMonitoringApi.csproj --configfile NuGet.Config
-dotnet format csharp-api/PoolMonitoringApi.csproj --no-restore
-dotnet build csharp-api/PoolMonitoringApi.csproj --no-restore
+dotnet restore ApiLoadTestExample.slnx --configfile NuGet.Config
+dotnet format ApiLoadTestExample.slnx --no-restore
+dotnet build ApiLoadTestExample.slnx --no-restore
 k6 inspect load-test.js
 k6 inspect load-test-scan.js
 docker compose --env-file .env.example config --quiet

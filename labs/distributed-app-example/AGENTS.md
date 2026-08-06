@@ -12,5 +12,6 @@ This file extends the repository-root `AGENTS.md`. Run lab commands from this di
 - The lab depends on the external `architecture-labs-observability` network created by
   `shared/observability`; do not reintroduce observability services into this Compose file.
 - Do not run `docker compose down --volumes` in either project without explicit approval.
-- Validate Compose changes with `docker compose --env-file .env.example config --quiet` and source changes with the
-  component-specific build before claiming the end-to-end flow works.
+- Validate .NET source changes with `dotnet build DistributedAppExample.slnx` and Compose changes
+  with `docker compose --env-file .env.example config --quiet` before claiming the end-to-end flow
+  works.

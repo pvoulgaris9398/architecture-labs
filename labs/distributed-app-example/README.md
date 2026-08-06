@@ -113,6 +113,7 @@ docker compose down --volumes
 cd ../../shared/observability
 docker compose --env-file .env.example config --quiet
 cd ../../labs/distributed-app-example
+dotnet build DistributedAppExample.slnx
 docker compose --env-file .env.example config --quiet
 docker compose build
 git diff --check

@@ -15,6 +15,8 @@
 - Do not create, copy, or migrate a lab without explicit approval.
 - Read the nearest nested `AGENTS.md` before changing a lab; lab-specific guidance may extend this
   root guidance.
+- Use the XML-based `.slnx` format for .NET solution files. Do not introduce legacy `.sln` files;
+  keep each solution within the lab that owns its projects.
 
 ## Monorepo boundaries
 

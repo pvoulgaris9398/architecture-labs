@@ -12,6 +12,8 @@ implementation's directory.
   contain a runnable implementation and supporting evidence.
 - Keep the interactive React and TypeScript application, its package metadata, and its container
   configuration isolated under `walkthrough-ui/`.
+- Keep .NET projects in XML-based `.slnx` solutions; validate the WebSocket server through
+  `transports/websocket/WebSocketDemo.slnx`.
 - Do not run load tests or destructive Docker cleanup without explicit approval.
 - Update the root README and this lab's status when an implementation becomes runnable or a result
   is recorded.
