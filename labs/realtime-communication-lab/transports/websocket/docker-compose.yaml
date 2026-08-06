@@ -9,7 +9,7 @@ services:
 
   ui:
     build:
-      context: ../..
+      context: ../../walkthrough-ui
       dockerfile: Dockerfile
     container_name: architecture-labs-realtime-websocket-ui
     ports:

@@ -15,7 +15,7 @@ The migrated baseline is a .NET 10 server using ASP.NET Core's raw WebSocket sup
 - a WebSocket endpoint at `/ws`;
 - an HTTP endpoint at `/api/events` for publishing and retrieving events;
 - ping/pong, acknowledgements, replay, heartbeat, ordering, and in-memory event storage; and
-- a small browser client under `transports/websocket/src/Client`.
+- an interactive React walkthrough under `walkthrough-ui/`.
 
 The in-memory event store is deliberately non-durable. Restarting the server loses its events.
 This configuration is for local experimentation and is not production guidance.
@@ -24,6 +24,7 @@ This configuration is for local experimentation and is not production guidance.
 
 ```text
 realtime-communication-lab/
+├── walkthrough-ui/         # Interactive React and TypeScript lab interface
 ├── transports/
 │   ├── websocket/          # Runnable migrated baseline
 │   ├── signalr/            # Planned
@@ -68,7 +69,7 @@ For UI development with hot reload, keep the server container running and start 
 cd labs/realtime-communication-lab/transports/websocket
 docker compose up --build -d server
 
-cd ../..
+cd ../../walkthrough-ui
 npx --yes pnpm@11.16.0 install --frozen-lockfile
 npx --yes pnpm@11.16.0 dev
 ```
@@ -113,7 +114,7 @@ docker compose down
 ## Validation
 
 ```bash
-cd labs/realtime-communication-lab
+cd labs/realtime-communication-lab/walkthrough-ui
 pnpm install --frozen-lockfile
 pnpm build
 
