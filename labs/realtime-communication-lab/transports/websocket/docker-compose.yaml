@@ -1,5 +1,10 @@
 name: architecture-labs-realtime-websocket
 
+networks:
+  observability:
+    external: true
+    name: architecture-labs-observability
+
 services:
 
   server:
@@ -9,6 +14,9 @@ services:
 
     ports:
       - "5000:8080"
+
+    networks:
+      - observability
 
     environment:
       ASPNETCORE_ENVIRONMENT: Development
