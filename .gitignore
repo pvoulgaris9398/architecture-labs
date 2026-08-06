@@ -4,6 +4,8 @@
 **/.vs/
 **/[Tt]est[Rr]esult*/
 **/artifacts/
+**/node_modules/
+**/dist/
 labs/api-load-test-example/results/local/
 *.user
 *.suo

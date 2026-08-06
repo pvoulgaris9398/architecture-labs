@@ -47,6 +47,19 @@ realtime-communication-lab/
 Empty planned directories contain `.gitkeep` files so the intended structure remains visible in
 Git without implying that those implementations exist.
 
+## Run the web application shell
+
+The lab root contains a Vite, React, and TypeScript start page that will host the interactive lab
+controls as they are added.
+
+```bash
+cd labs/realtime-communication-lab
+pnpm install
+pnpm dev
+```
+
+Open the local URL printed by Vite. Create a production build with `pnpm build`.
+
 ## Run the WebSocket baseline
 
 Requirements: Docker with Docker Compose v2, or the .NET 10 SDK for a local build.
@@ -84,6 +97,10 @@ docker compose down
 ## Validation
 
 ```bash
+cd labs/realtime-communication-lab
+pnpm install --frozen-lockfile
+pnpm build
+
 cd labs/realtime-communication-lab/transports/websocket
 dotnet tool restore
 dotnet build WebSocketDemo.sln
