@@ -28,6 +28,22 @@ interface EventMessage {
   message?: string;
 }
 
+interface BurstPublishResult {
+  Count?: number;
+  count?: number;
+  FirstSequence?: number;
+  firstSequence?: number;
+  LastSequence?: number;
+  lastSequence?: number;
+}
+
+interface QueueMetrics {
+  depth: number;
+  capacity: number;
+  waits: number;
+  averageDelayMilliseconds: number;
+}
+
 const labels: Record<LogKind, string> = {
   system: 'System',
   sent: 'Sent',
@@ -38,6 +54,17 @@ const labels: Record<LogKind, string> = {
 
 function formatPayload(value: unknown) {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+}
+
+function sumMetric(metrics: string, name: string, connectionMode?: string) {
+  return metrics
+    .split('\n')
+    .filter((line) => line.startsWith(name))
+    .filter((line) => !connectionMode || line.includes(`connection_mode="${connectionMode}"`))
+    .reduce((sum, line) => {
+      const value = Number(line.trim().split(/\s+/).at(-1));
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
 }
 
 export default function WebSocketWalkthrough() {
@@ -51,6 +78,11 @@ export default function WebSocketWalkthrough() {
   const [acknowledgedSequence, setAcknowledgedSequence] = useState<number | null>(null);
   const [replayFrom, setReplayFrom] = useState(0);
   const [requestPending, setRequestPending] = useState(false);
+  const [slowMode, setSlowMode] = useState(false);
+  const [sendDelayMilliseconds, setSendDelayMilliseconds] = useState(25);
+  const [burstCount, setBurstCount] = useState(750);
+  const [burstPending, setBurstPending] = useState(false);
+  const [queueMetrics, setQueueMetrics] = useState<QueueMetrics | null>(null);
   const browserNode = `Browser UI (${window.location.host})`;
   const apiEndpoint = `${window.location.origin}/api/events`;
   const socketProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -84,14 +116,17 @@ export default function WebSocketWalkthrough() {
       return;
     }
 
-    const socket = new WebSocket(socketEndpoint);
+    const connectionEndpoint = slowMode
+      ? `${socketEndpoint}?sendDelayMs=${sendDelayMilliseconds}`
+      : socketEndpoint;
+    const socket = new WebSocket(connectionEndpoint);
 
     socketRef.current = socket;
     setConnectionState('connecting');
     addLog('system', 'Opening WebSocket connection', undefined, {
       from: browserNode,
       to: 'WebSocket server',
-      endpoint: socketEndpoint,
+      endpoint: connectionEndpoint,
       via: proxyNode,
     });
 
@@ -100,7 +135,7 @@ export default function WebSocketWalkthrough() {
       addLog('system', 'Connection established', undefined, {
         from: 'WebSocket server',
         to: browserNode,
-        endpoint: socketEndpoint,
+        endpoint: connectionEndpoint,
         via: proxyNode,
       });
     });
@@ -222,6 +257,53 @@ export default function WebSocketWalkthrough() {
     }
   };
 
+  const publishBurst = async () => {
+    setBurstPending(true);
+    addLog('http', 'Controlled burst started', {
+      count: burstCount,
+      connectionMode: slowMode ? 'slow' : 'normal',
+      sendDelayMilliseconds: slowMode ? sendDelayMilliseconds : 0,
+    }, {
+      from: browserNode,
+      to: 'HTTP event API',
+      endpoint: `POST ${apiEndpoint}/burst`,
+      via: proxyNode,
+    });
+
+    try {
+      const response = await fetch('/api/events/burst', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: burstCount, messagePrefix: 'slow-client-test' }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+      }
+
+      const result = (await response.json()) as BurstPublishResult;
+      const lastSequence = result.LastSequence ?? result.lastSequence;
+      if (typeof lastSequence === 'number') {
+        setLatestSequence((current) => Math.max(current, lastSequence));
+      }
+      addLog('http', 'Controlled burst enqueued', result, {
+        from: 'HTTP event API',
+        to: browserNode,
+        endpoint: `${response.status} POST ${apiEndpoint}/burst`,
+        via: proxyNode,
+      });
+    } catch (error) {
+      addLog('error', 'Controlled burst failed', error instanceof Error ? error.message : String(error), {
+        from: 'HTTP event API',
+        to: browserNode,
+        endpoint: `POST ${apiEndpoint}/burst`,
+        via: proxyNode,
+      });
+    } finally {
+      setBurstPending(false);
+    }
+  };
+
   const acknowledgeLatest = () => {
     if (latestSequence < 1) {
       addLog('error', 'Nothing to acknowledge', 'Publish or replay an event first.', {
@@ -262,6 +344,55 @@ export default function WebSocketWalkthrough() {
 
     return () => window.cancelAnimationFrame(frame);
   }, [logs.length]);
+
+  useEffect(() => {
+    if (connectionState !== 'connected') {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshMetrics = async () => {
+      try {
+        const response = await fetch('/metrics', { cache: 'no-store' });
+        if (!response.ok) {
+          return;
+        }
+
+        const metrics = await response.text();
+        const mode = slowMode ? 'slow' : 'normal';
+        const delaySum = sumMetric(
+          metrics,
+          'websocket_outbound_queue_delay_milliseconds_sum',
+          mode,
+        );
+        const delayCount = sumMetric(
+          metrics,
+          'websocket_outbound_queue_delay_milliseconds_count',
+          mode,
+        );
+
+        if (!cancelled) {
+          setQueueMetrics({
+            depth: sumMetric(metrics, 'websocket_outbound_queue_depth', mode),
+            capacity: sumMetric(metrics, 'websocket_outbound_queue_capacity', mode),
+            waits: sumMetric(metrics, 'websocket_outbound_backpressure_waits_total', mode),
+            averageDelayMilliseconds: delayCount > 0 ? delaySum / delayCount : 0,
+          });
+        }
+      } catch {
+        // The metrics panel is supplemental; connection controls remain usable if it is unavailable.
+      }
+    };
+
+    void refreshMetrics();
+    const interval = window.setInterval(() => void refreshMetrics(), 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [connectionState, slowMode]);
 
   const isConnected = connectionState === 'connected';
 
@@ -316,6 +447,38 @@ export default function WebSocketWalkthrough() {
                   Disconnect
                 </button>
               </div>
+              <label className="mode-toggle">
+                <input
+                  type="checkbox"
+                  checked={slowMode}
+                  disabled={connectionState !== 'disconnected'}
+                  onChange={(event) => setSlowMode(event.target.checked)}
+                />
+                <span>
+                  <strong>Controlled slow client</strong>
+                  Delay each server send for this connection.
+                </span>
+              </label>
+              {slowMode && (
+                <div className="inline-field">
+                  <label className="field-label" htmlFor="send-delay">
+                    Send delay (milliseconds)
+                  </label>
+                  <input
+                    id="send-delay"
+                    type="number"
+                    min="1"
+                    max="2000"
+                    value={sendDelayMilliseconds}
+                    disabled={connectionState !== 'disconnected'}
+                    onChange={(event) =>
+                      setSendDelayMilliseconds(
+                        Math.min(2000, Math.max(1, Number(event.target.value) || 1)),
+                      )
+                    }
+                  />
+                </div>
+              )}
             </div>
           </article>
 
@@ -429,6 +592,51 @@ export default function WebSocketWalkthrough() {
                   Request replay
                 </button>
               </div>
+            </div>
+          </article>
+
+          <article className="walkthrough-step experiment-step">
+            <div className="step-number">06</div>
+            <div className="step-content">
+              <p className="step-kicker">Backpressure experiment</p>
+              <h2>Fill one client's outbound channel</h2>
+              <p>
+                Disconnect, enable the controlled slow client above, reconnect, and publish a
+                burst. At the default settings, 750 events arrive faster than the 500-message
+                channel can drain, forcing publishers to wait for capacity.
+              </p>
+              <label className="field-label" htmlFor="burst-count">
+                Burst event count
+              </label>
+              <div className="input-action input-action-small">
+                <input
+                  id="burst-count"
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={burstCount}
+                  onChange={(event) =>
+                    setBurstCount(Math.min(1000, Math.max(1, Number(event.target.value) || 1)))
+                  }
+                />
+                <button
+                  className="primary-action compact"
+                  type="button"
+                  disabled={!isConnected || !slowMode || burstPending}
+                  onClick={() => void publishBurst()}
+                >
+                  {burstPending ? 'Publishing burstâ€¦' : 'Publish controlled burst'}
+                </button>
+              </div>
+              <div className="metrics-strip" aria-live="polite">
+                <div><span>Queue</span><strong>{queueMetrics?.depth ?? 'â€”'} / {queueMetrics?.capacity ?? 'â€”'}</strong></div>
+                <div><span>Waits</span><strong>{queueMetrics?.waits ?? 'â€”'}</strong></div>
+                <div><span>Avg delay</span><strong>{queueMetrics ? `${queueMetrics.averageDelayMilliseconds.toFixed(1)} ms` : 'â€”'}</strong></div>
+              </div>
+              <p className="experiment-note">
+                Metrics refresh once per second. Grafana retains the full time series after the
+                queue drains.
+              </p>
             </div>
           </article>
         </div>

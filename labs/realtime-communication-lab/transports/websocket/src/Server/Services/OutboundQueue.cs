@@ -34,9 +34,13 @@ public sealed class OutboundQueue
                 return;
             }
 
-            _metrics.BackpressureWaited(message.Type, Stopwatch.GetElapsedTime(waitStarted));
+            _metrics.BackpressureWaited(
+                connection.Mode,
+                message.Type,
+                Stopwatch.GetElapsedTime(waitStarted)
+            );
         }
 
-        _metrics.MessageEnqueued(message.Type);
+        _metrics.MessageEnqueued(connection.Mode, message.Type);
     }
 }

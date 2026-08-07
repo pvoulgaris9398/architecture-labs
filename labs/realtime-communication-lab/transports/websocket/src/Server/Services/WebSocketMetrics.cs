@@ -39,42 +39,56 @@ public sealed class WebSocketMetrics : IHostedService, IDisposable
 
         _meter.CreateObservableGauge(
             "websocket.connections.active",
-            () => connections.Count,
+            () => CreateMeasurements(connections, _ => 1),
             unit: "{connection}"
         );
         _meter.CreateObservableGauge(
             "websocket.outbound.queue.depth",
-            () => connections.Connections.Sum(connection => connection.Outbound.Reader.Count),
+            () => CreateMeasurements(connections, connection => connection.Outbound.Reader.Count),
             unit: "{message}"
         );
         _meter.CreateObservableGauge(
             "websocket.outbound.queue.capacity",
-            () => connections.Count * ClientConnection.OutboundCapacity,
+            () => CreateMeasurements(connections, _ => ClientConnection.OutboundCapacity),
             unit: "{message}"
         );
     }
 
-    public void MessageEnqueued(string messageType) =>
-        _enqueued.Add(1, new KeyValuePair<string, object?>("message.type", messageType));
+    public void MessageEnqueued(string connectionMode, string messageType) =>
+        _enqueued.Add(1, CreateTags(connectionMode, messageType));
 
-    public void MessageSent(string messageType, long enqueuedTimestamp)
+    public void MessageSent(string connectionMode, string messageType, long enqueuedTimestamp)
     {
-        _sent.Add(1, new KeyValuePair<string, object?>("message.type", messageType));
-        _queueDelay.Record(
-            Stopwatch.GetElapsedTime(enqueuedTimestamp).TotalMilliseconds,
-            new KeyValuePair<string, object?>("message.type", messageType)
-        );
+        var tags = CreateTags(connectionMode, messageType);
+        _sent.Add(1, tags);
+        _queueDelay.Record(Stopwatch.GetElapsedTime(enqueuedTimestamp).TotalMilliseconds, tags);
     }
 
     public void SendFailed(string exceptionType) =>
         _sendFailures.Add(1, new KeyValuePair<string, object?>("error.type", exceptionType));
 
-    public void BackpressureWaited(string messageType, TimeSpan duration)
+    public void BackpressureWaited(string connectionMode, string messageType, TimeSpan duration)
     {
-        var tag = new KeyValuePair<string, object?>("message.type", messageType);
-        _backpressureWaits.Add(1, tag);
-        _backpressureDuration.Record(duration.TotalMilliseconds, tag);
+        var tags = CreateTags(connectionMode, messageType);
+        _backpressureWaits.Add(1, tags);
+        _backpressureDuration.Record(duration.TotalMilliseconds, tags);
     }
+
+    private static TagList CreateTags(string connectionMode, string messageType) =>
+        new() { { "connection.mode", connectionMode }, { "message.type", messageType } };
+
+    private static Measurement<int>[] CreateMeasurements(
+        ConnectionManager connections,
+        Func<ClientConnection, int> valueSelector
+    ) =>
+        new[] { "normal", "slow" }
+            .Select(mode => new Measurement<int>(
+                connections
+                    .Connections.Where(connection => connection.Mode == mode)
+                    .Sum(valueSelector),
+                new KeyValuePair<string, object?>("connection.mode", mode)
+            ))
+            .ToArray();
 
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 

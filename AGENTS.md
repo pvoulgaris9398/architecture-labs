@@ -89,6 +89,22 @@
 - Clearly label configurations that are suitable only for local experiments and avoid implying
   that demo credentials, open ports, or unauthenticated endpoints are production-safe.
 
+## Observability and Prometheus metric names
+
+- Treat the metric name stored by Prometheus as authoritative for PromQL and Grafana dashboards.
+  Do not infer it solely from the application's raw `/metrics` response: exporter content
+  negotiation and Prometheus translation settings can cause the rendered and stored names to
+  differ, including underscore-rendered OpenTelemetry names being stored with dots.
+- Before finalizing or changing a dashboard query, verify the actual stored name through
+  Prometheus, for example with `/api/v1/label/__name__/values`, and execute the intended expression
+  through `/api/v1/query` or the Prometheus query UI.
+- Query dotted metric names with an exact quoted name selector, for example
+  `{__name__="websocket.outbound.queue.depth"}`, because a dotted name cannot be written as a bare
+  PromQL identifier. Preserve the stored spelling rather than replacing dots with underscores.
+- Validate dashboards against a running workload and Prometheus scrape, not only by parsing the
+  dashboard JSON or confirming that the application exposes metrics. Confirm that each panel's
+  PromQL returns the expected series and labels from Prometheus.
+
 ## Validation and destructive operations
 
 - Give every lab documented build, format, smoke-test, and configuration-validation commands.

@@ -8,7 +8,7 @@
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
       "id": 1,
-      "targets": [{ "expr": "websocket_connections_active", "legendFormat": "active" }],
+      "targets": [{ "expr": "{__name__=\"websocket.connections.active\"}", "legendFormat": "{{connection_mode}}" }],
       "title": "Active connections",
       "type": "timeseries"
     },
@@ -18,8 +18,8 @@
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
       "id": 2,
       "targets": [
-        { "expr": "websocket_outbound_queue_depth", "legendFormat": "depth" },
-        { "expr": "websocket_outbound_queue_capacity", "legendFormat": "capacity" }
+        { "expr": "{__name__=\"websocket.outbound.queue.depth\"}", "legendFormat": "depth {{connection_mode}}" },
+        { "expr": "{__name__=\"websocket.outbound.queue.capacity\"}", "legendFormat": "capacity {{connection_mode}}" }
       ],
       "title": "Aggregate outbound queue",
       "type": "timeseries"
@@ -30,8 +30,8 @@
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
       "id": 3,
       "targets": [
-        { "expr": "sum by (message_type) (rate(websocket_outbound_messages_enqueued_total[1m]))", "legendFormat": "enqueued {{message_type}}" },
-        { "expr": "sum by (message_type) (rate(websocket_outbound_messages_sent_total[1m]))", "legendFormat": "sent {{message_type}}" }
+        { "expr": "sum by (connection_mode, message_type) (rate({__name__=\"websocket.outbound.messages.enqueued_total\"}[1m]))", "legendFormat": "enqueued {{connection_mode}} {{message_type}}" },
+        { "expr": "sum by (connection_mode, message_type) (rate({__name__=\"websocket.outbound.messages.sent_total\"}[1m]))", "legendFormat": "sent {{connection_mode}} {{message_type}}" }
       ],
       "title": "Outbound message rate",
       "type": "timeseries"
@@ -41,7 +41,7 @@
       "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "id": 4,
-      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, message_type) (rate(websocket_outbound_queue_delay_milliseconds_bucket[1m])))", "legendFormat": "p95 {{message_type}}" }],
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, connection_mode, message_type) (rate({__name__=\"websocket.outbound.queue.delay_milliseconds_bucket\"}[1m])))", "legendFormat": "p95 {{connection_mode}} {{message_type}}" }],
       "title": "Queue delay p95",
       "type": "timeseries"
     },
@@ -51,8 +51,8 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "id": 5,
       "targets": [
-        { "expr": "sum by (message_type) (rate(websocket_outbound_backpressure_waits_total[1m]))", "legendFormat": "waits {{message_type}}" },
-        { "expr": "sum by (error_type) (rate(websocket_outbound_send_failures_total[1m]))", "legendFormat": "failures {{error_type}}" }
+        { "expr": "sum by (connection_mode, message_type) (rate({__name__=\"websocket.outbound.backpressure.waits_total\"}[1m]))", "legendFormat": "waits {{connection_mode}} {{message_type}}" },
+        { "expr": "sum by (error_type) (rate({__name__=\"websocket.outbound.send.failures_total\"}[1m]))", "legendFormat": "failures {{error_type}}" }
       ],
       "title": "Backpressure waits and send failures",
       "type": "timeseries"

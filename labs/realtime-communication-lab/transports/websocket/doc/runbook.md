@@ -3,6 +3,7 @@
 Use this runbook to verify the raw WebSocket baseline manually. It tests connection establishment,
 application-level ping/pong, live event broadcast, ordered retrieval, acknowledgement handling,
 replay after disconnection, invalid input handling, and idle-connection cleanup.
+It also includes a bounded slow-client experiment that makes outbound backpressure observable.
 
 This is a functional smoke test, not a controlled performance benchmark.
 
@@ -194,7 +195,37 @@ with `lastSequence` equal to the current latest sequence returns no messages.
 Replay data is held only in process memory. Restarting or recreating the server resets the event
 store and sequence counter.
 
-## 7. Verify multiple-client broadcast
+## 7. Run the controlled slow-client experiment
+
+The interactive walkthrough is the preferred way to run this experiment. Open
+<http://127.0.0.1:15173>, enable **Controlled slow client**, keep the default 25 ms send delay,
+connect, and publish the default burst of 750 events. The server channel holds 500 messages, so
+the burst intentionally exceeds its capacity.
+
+The same experiment can be driven from a command line. Connect the deliberately delayed client:
+
+```bash
+npx wscat -c 'ws://127.0.0.1:5000/ws?sendDelayMs=25'
+```
+
+In another terminal, publish the bounded burst:
+
+```bash
+curl -fsS -X POST http://127.0.0.1:5000/api/events/burst \
+  -H 'Content-Type: application/json' \
+  -d '{"count":750,"messagePrefix":"slow-client-test"}'
+```
+
+Expected result: queue depth approaches its 500-message capacity, the burst request waits while
+the sender frees capacity, and `websocket_outbound_backpressure_waits_total` increases with
+`connection_mode="slow"`. Queue depth, capacity, wait count, and average delay refresh in the
+walkthrough once per second and remain visible as time series in Grafana.
+
+This delay is an explicit lab control applied by the server before each send. It models a slow
+consumer deterministically; it does not claim to reproduce every network or browser failure mode.
+The server caps `sendDelayMs` at 2000 and burst count at 1000 to keep the local experiment bounded.
+
+## 8. Verify multiple-client broadcast
 
 Open two separate `wscat` sessions, then publish another event through the HTTP endpoint. Both
 sessions should receive the same event with the same sequence and timestamp.
@@ -202,7 +233,7 @@ sessions should receive the same event with the same sequence and timestamp.
 This confirms fan-out to the currently connected clients; it does not establish delivery
 guarantees when a connection fails during a broadcast.
 
-## 8. Verify invalid-message handling
+## 9. Verify invalid-message handling
 
 Send each of these values from `wscat`:
 
@@ -219,7 +250,7 @@ invalid JSON, a missing message type, and an unknown message type respectively:
 docker compose logs --since 1m server
 ```
 
-## 9. Optional heartbeat check
+## 10. Optional heartbeat check
 
 Connect a client and do not send any application messages. The server considers a connection idle
 after two minutes and checks for idle connections every 30 seconds. The connection should
@@ -228,7 +259,7 @@ therefore close after approximately two to two-and-a-half minutes with the reaso
 
 Sending an application message such as `{"type":"ping"}` updates the connection's last-seen time.
 
-## 10. Stop and clean up
+## 11. Stop and clean up
 
 Exit all `wscat` sessions, then stop the demo:
 

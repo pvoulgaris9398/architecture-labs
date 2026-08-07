@@ -27,6 +27,11 @@ public sealed class ConnectionSender
                 if (connection.Socket.State != WebSocketState.Open)
                     break;
 
+                if (connection.OutboundSendDelay > TimeSpan.Zero)
+                {
+                    await Task.Delay(connection.OutboundSendDelay, connection.Cancellation.Token);
+                }
+
                 var json = JsonSerializer.Serialize(queued.Message);
 
                 var bytes = Encoding.UTF8.GetBytes(json);
@@ -38,7 +43,11 @@ public sealed class ConnectionSender
                     connection.Cancellation.Token
                 );
 
-                _metrics.MessageSent(queued.Message.Type, queued.EnqueuedTimestamp);
+                _metrics.MessageSent(
+                    connection.Mode,
+                    queued.Message.Type,
+                    queued.EnqueuedTimestamp
+                );
 
                 Console.WriteLine($"Sent {queued.Message.Type} to {connection.Id}");
             }

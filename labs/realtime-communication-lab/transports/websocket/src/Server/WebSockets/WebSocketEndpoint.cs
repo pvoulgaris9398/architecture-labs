@@ -7,6 +7,8 @@ namespace Server.WebSockets;
 
 public sealed class WebSocketEndpoint
 {
+    private const int MaximumSendDelayMilliseconds = 2_000;
+
     private readonly ConnectionManager _connections;
     private readonly SocketDispatcher _dispatcher;
     private readonly ConnectionSender _sender;
@@ -37,11 +39,26 @@ public sealed class WebSocketEndpoint
 
         var socket = await context.WebSockets.AcceptWebSocketAsync();
 
-        var connection = new ClientConnection { Socket = socket };
+        var sendDelayMilliseconds = 0;
+        if (
+            int.TryParse(context.Request.Query["sendDelayMs"], out var requestedDelay)
+            && requestedDelay > 0
+        )
+        {
+            sendDelayMilliseconds = Math.Min(requestedDelay, MaximumSendDelayMilliseconds);
+        }
+
+        var connection = new ClientConnection
+        {
+            Socket = socket,
+            OutboundSendDelay = TimeSpan.FromMilliseconds(sendDelayMilliseconds),
+        };
 
         _connections.Add(connection);
 
-        Console.WriteLine($"Client connected: {connection.Id}");
+        Console.WriteLine(
+            $"Client connected: {connection.Id} (mode={connection.Mode}, sendDelayMs={sendDelayMilliseconds})"
+        );
 
         // Start the outbound sender loop.
         var senderTask = _sender.RunAsync(connection);

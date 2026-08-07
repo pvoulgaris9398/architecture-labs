@@ -51,6 +51,10 @@ With the example ports:
 
 Grafana credentials come from this stack's `.env`.
 
+Grafana uses the shared `grafana/grafana.ini` date formats for every provisioned dashboard. Time
+axes and the time picker use a 12-hour clock with AM/PM while dashboards continue to display the
+browser's local time zone.
+
 ## Lab lifecycle
 
 Labs can start and stop independently after this stack is running. A stopped lab appears as a down

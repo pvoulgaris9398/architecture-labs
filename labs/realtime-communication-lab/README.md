@@ -15,7 +15,8 @@ The migrated baseline is a .NET 10 server using ASP.NET Core's raw WebSocket sup
 - a WebSocket endpoint at `/ws`;
 - an HTTP endpoint at `/api/events` for publishing and retrieving events;
 - ping/pong, acknowledgements, replay, heartbeat, ordering, and in-memory event storage;
-- a bounded, single-writer outbound channel per connection with Prometheus queue metrics; and
+- a bounded, single-writer outbound channel per connection with Prometheus queue metrics;
+- a controlled slow-client and burst-publishing experiment for observing backpressure; and
 - an interactive React walkthrough under `walkthrough-ui/`.
 
 The in-memory event store is deliberately non-durable. Restarting the server loses its events.
@@ -69,6 +70,7 @@ observability stack is running, open Grafana and select **Realtime Communication
 outbound queues**. The dashboard shows active connections, aggregate queue depth and capacity,
 message rates, queue delay, backpressure waits, and send failures. Connection identifiers are
 intentionally excluded from metric labels to avoid unbounded time-series cardinality.
+The bounded `connection_mode` label distinguishes only `normal` and `slow` lab connections.
 
 For UI development with hot reload, keep the server container running and start Vite separately:
 

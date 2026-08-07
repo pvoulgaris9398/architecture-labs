@@ -11,6 +11,10 @@ public sealed class ClientConnection
 
     public required WebSocket Socket { get; init; }
 
+    public TimeSpan OutboundSendDelay { get; init; }
+
+    public string Mode => OutboundSendDelay > TimeSpan.Zero ? "slow" : "normal";
+
     public DateTime ConnectedUtc { get; } = DateTime.UtcNow;
 
     public DateTime LastSeenUtc { get; set; } = DateTime.UtcNow;

@@ -678,6 +678,91 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(98, 232, 199, 0.07);
 }
 
+.mode-toggle {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: fit-content;
+  margin-top: 18px;
+  color: #8795a9;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.mode-toggle input {
+  width: 16px;
+  min-height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.mode-toggle span {
+  display: grid;
+  gap: 2px;
+}
+
+.mode-toggle strong {
+  color: #c2cede;
+  font-weight: 600;
+}
+
+.inline-field {
+  width: min(220px, 100%);
+  margin-top: 16px;
+}
+
+.experiment-step {
+  margin-top: 16px;
+  padding-inline: 18px;
+  border: 1px solid rgba(98, 232, 199, 0.2);
+  border-radius: 10px;
+  background: rgba(18, 42, 57, 0.28);
+}
+
+.metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 20px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.metrics-strip > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px;
+  background: rgba(7, 16, 29, 0.92);
+}
+
+.metrics-strip span,
+.experiment-note {
+  color: #68778d;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.metrics-strip strong {
+  overflow: hidden;
+  color: var(--accent);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step-content > .experiment-note {
+  margin: 12px 0 0;
+  line-height: 1.6;
+}
+
 .sequence-summary {
   display: flex;
   gap: 8px;
@@ -979,5 +1064,9 @@ input:focus {
   .button-row > button,
   .input-action > button {
     width: 100%;
+  }
+
+  .metrics-strip {
+    grid-template-columns: 1fr;
   }
 }
