@@ -16,7 +16,8 @@ The migrated baseline is a .NET 10 server using ASP.NET Core's raw WebSocket sup
 - an HTTP endpoint at `/api/events` for publishing and retrieving events;
 - ping/pong, acknowledgements, replay, heartbeat, ordering, and in-memory event storage;
 - a bounded, single-writer outbound channel per connection with Prometheus queue metrics;
-- a controlled slow-client and burst-publishing experiment for observing backpressure; and
+- a controlled slow-client and burst-publishing experiment for observing backpressure;
+- fragmented text-message reassembly with a 64 KiB limit and protocol-specific close codes; and
 - an interactive React walkthrough under `walkthrough-ui/`.
 
 The in-memory event store is deliberately non-durable. Restarting the server loses its events.

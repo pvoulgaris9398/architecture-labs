@@ -259,7 +259,26 @@ invalid JSON, a missing message type, and an unknown message type respectively:
 docker compose logs --since 1m server
 ```
 
-## 10. Optional heartbeat check
+## 10. Verify framing and payload policy
+
+The endpoint reassembles fragmented text frames before parsing JSON and accepts at most 64 KiB per
+complete message. It rejects unsupported or invalid messages with these WebSocket close codes:
+
+| Condition | Close code | Status |
+| --- | ---: | --- |
+| Binary message | 1003 | Invalid message type |
+| Invalid UTF-8 text | 1007 | Invalid payload data |
+| Message larger than 64 KiB | 1009 | Message too big |
+
+The integration suite sends a fragmented ping and verifies all three rejection paths:
+
+```bash
+dotnet run --project tests/Server.IntegrationTests
+```
+
+Expected result: all five tests pass, including the slow-client backpressure test.
+
+## 11. Optional heartbeat check
 
 Connect a client and do not send any application messages. The server considers a connection idle
 after two minutes and checks for idle connections every 30 seconds. The connection should
@@ -268,7 +287,7 @@ therefore close after approximately two to two-and-a-half minutes with the reaso
 
 Sending an application message such as `{"type":"ping"}` updates the connection's last-seen time.
 
-## 11. Stop and clean up
+## 12. Stop and clean up
 
 Exit all `wscat` sessions, then stop the demo:
 

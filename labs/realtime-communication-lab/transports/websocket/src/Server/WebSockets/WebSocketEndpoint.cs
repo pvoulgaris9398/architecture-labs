@@ -8,6 +8,12 @@ namespace Server.WebSockets;
 public sealed class WebSocketEndpoint
 {
     private const int MaximumSendDelayMilliseconds = 2_000;
+    private const int MaximumMessageBytes = 64 * 1024;
+    private const int ReceiveBufferBytes = 4 * 1024;
+    private static readonly UTF8Encoding StrictUtf8 = new(
+        encoderShouldEmitUTF8Identifier: false,
+        throwOnInvalidBytes: true
+    );
 
     private readonly ConnectionManager _connections;
     private readonly SocketDispatcher _dispatcher;
@@ -63,33 +69,30 @@ public sealed class WebSocketEndpoint
         // Start the outbound sender loop.
         var senderTask = _sender.RunAsync(connection);
 
-        var buffer = new byte[8192];
-
         try
         {
             while (
                 socket.State == WebSocketState.Open && !linkedCancellation.IsCancellationRequested
             )
             {
-                var result = await socket.ReceiveAsync(buffer, linkedCancellation.Token);
+                var message = await ReceiveMessageAsync(socket, linkedCancellation.Token);
 
-                if (result.MessageType == WebSocketMessageType.Close)
+                if (message.Kind == ReceivedMessageKind.Close)
                 {
                     Console.WriteLine($"Client requested close: {connection.Id}");
                     break;
                 }
 
-                if (result.MessageType != WebSocketMessageType.Text)
-                {
-                    Console.WriteLine($"Ignoring non-text message from {connection.Id}");
-                    continue;
-                }
-
-                var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                if (message.Kind == ReceivedMessageKind.Rejected)
+                    break;
 
                 connection.LastSeenUtc = DateTime.UtcNow;
 
-                await _dispatcher.DispatchAsync(connection, json, linkedCancellation.Token);
+                await _dispatcher.DispatchAsync(
+                    connection,
+                    message.Text!,
+                    linkedCancellation.Token
+                );
             }
         }
         catch (OperationCanceledException)
@@ -143,4 +146,82 @@ public sealed class WebSocketEndpoint
             Console.WriteLine($"Client disconnected: {connection.Id}");
         }
     }
+
+    private static async Task<ReceivedMessage> ReceiveMessageAsync(
+        WebSocket socket,
+        CancellationToken cancellationToken
+    )
+    {
+        using var messageBytes = new MemoryStream();
+        var buffer = new byte[ReceiveBufferBytes];
+
+        while (true)
+        {
+            var result = await socket.ReceiveAsync(buffer, cancellationToken);
+
+            if (result.MessageType == WebSocketMessageType.Close)
+                return new ReceivedMessage(ReceivedMessageKind.Close);
+
+            if (result.MessageType != WebSocketMessageType.Text)
+            {
+                await RejectMessageAsync(
+                    socket,
+                    WebSocketCloseStatus.InvalidMessageType,
+                    "Text messages only",
+                    cancellationToken
+                );
+                return new ReceivedMessage(ReceivedMessageKind.Rejected);
+            }
+
+            if (messageBytes.Length + result.Count > MaximumMessageBytes)
+            {
+                await RejectMessageAsync(
+                    socket,
+                    WebSocketCloseStatus.MessageTooBig,
+                    $"Message exceeds {MaximumMessageBytes} bytes",
+                    cancellationToken
+                );
+                return new ReceivedMessage(ReceivedMessageKind.Rejected);
+            }
+
+            messageBytes.Write(buffer, 0, result.Count);
+
+            if (!result.EndOfMessage)
+                continue;
+
+            try
+            {
+                return new ReceivedMessage(
+                    ReceivedMessageKind.Text,
+                    StrictUtf8.GetString(messageBytes.GetBuffer(), 0, (int)messageBytes.Length)
+                );
+            }
+            catch (DecoderFallbackException)
+            {
+                await RejectMessageAsync(
+                    socket,
+                    WebSocketCloseStatus.InvalidPayloadData,
+                    "Text message is not valid UTF-8",
+                    cancellationToken
+                );
+                return new ReceivedMessage(ReceivedMessageKind.Rejected);
+            }
+        }
+    }
+
+    private static Task RejectMessageAsync(
+        WebSocket socket,
+        WebSocketCloseStatus status,
+        string reason,
+        CancellationToken cancellationToken
+    ) => socket.CloseOutputAsync(status, reason, cancellationToken);
+
+    private enum ReceivedMessageKind
+    {
+        Text,
+        Close,
+        Rejected,
+    }
+
+    private sealed record ReceivedMessage(ReceivedMessageKind Kind, string? Text = null);
 }
