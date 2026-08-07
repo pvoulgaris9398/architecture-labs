@@ -225,6 +225,15 @@ This delay is an explicit lab control applied by the server before each send. It
 consumer deterministically; it does not claim to reproduce every network or browser failure mode.
 The server caps `sendDelayMs` at 2000 and burst count at 1000 to keep the local experiment bounded.
 
+Run the automated version from the WebSocket implementation directory:
+
+```bash
+dotnet run --project tests/Server.IntegrationTests
+```
+
+The integration test uses a 5 ms delay and asserts that the queue reaches its 500-message
+capacity, backpressure waits occur, all 750 sequences arrive in order, and the queue drains.
+
 ## 8. Verify multiple-client broadcast
 
 Open two separate `wscat` sessions, then publish another event through the HTTP endpoint. Both

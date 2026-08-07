@@ -32,7 +32,7 @@ public sealed class ConnectionSender
                     await Task.Delay(connection.OutboundSendDelay, connection.Cancellation.Token);
                 }
 
-                var json = JsonSerializer.Serialize(queued.Message);
+                var json = JsonSerializer.Serialize(queued.Message, queued.Message.GetType());
 
                 var bytes = Encoding.UTF8.GetBytes(json);
 
@@ -48,8 +48,6 @@ public sealed class ConnectionSender
                     queued.Message.Type,
                     queued.EnqueuedTimestamp
                 );
-
-                Console.WriteLine($"Sent {queued.Message.Type} to {connection.Id}");
             }
         }
         catch (OperationCanceledException)

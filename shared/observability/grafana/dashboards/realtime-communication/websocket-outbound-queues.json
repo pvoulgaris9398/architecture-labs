@@ -56,6 +56,56 @@
       ],
       "title": "Backpressure waits and send failures",
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 5, "x": 0, "y": 16 },
+      "id": 6,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{ "expr": "sum by (connection_mode) ({__name__=\"websocket.outbound.messages.enqueued_total\"})", "legendFormat": "{{connection_mode}}" }],
+      "title": "Messages enqueued (total)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 5, "x": 5, "y": 16 },
+      "id": 7,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{ "expr": "sum by (connection_mode) ({__name__=\"websocket.outbound.messages.sent_total\"})", "legendFormat": "{{connection_mode}}" }],
+      "title": "Messages sent (total)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 5, "x": 10, "y": 16 },
+      "id": 8,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{ "expr": "sum by (connection_mode) ({__name__=\"websocket.outbound.backpressure.waits_total\"})", "legendFormat": "{{connection_mode}}" }],
+      "title": "Backpressure waits (total)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 5, "x": 15, "y": 16 },
+      "id": 9,
+      "options": { "reduceOptions": { "calcs": ["max"], "fields": "", "values": false } },
+      "targets": [{ "expr": "{__name__=\"websocket.outbound.queue.depth\"}", "legendFormat": "{{connection_mode}}" }],
+      "title": "Maximum queue depth",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 4, "x": 20, "y": 16 },
+      "id": 10,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, connection_mode) (increase({__name__=\"websocket.outbound.queue.delay_milliseconds_bucket\"}[$__range])))", "instant": true, "legendFormat": "{{connection_mode}}" }],
+      "title": "Queue delay p95 (range)",
+      "type": "stat"
     }
   ],
   "refresh": "5s",

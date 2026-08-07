@@ -76,3 +76,5 @@ app.MapControllers();
 app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
 app.Run();
+
+public partial class Program;

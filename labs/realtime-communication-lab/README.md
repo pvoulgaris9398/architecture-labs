@@ -130,7 +130,8 @@ pnpm build
 cd labs/realtime-communication-lab/transports/websocket
 dotnet tool restore
 dotnet build WebSocketDemo.slnx
-dotnet csharpier check src/Server
+dotnet csharpier check src/Server tests/Server.IntegrationTests
+dotnet run --project tests/Server.IntegrationTests
 docker compose config --quiet
 docker compose build
 ```
