@@ -10,8 +10,8 @@ Docker Compose v2 is required.
 
 - `api-load-test-collector` preserves the API load-test lab's tail-sampling and Seq export policy.
 - `distributed-app-collector` exports distributed-app traces to Jaeger and metrics to Prometheus.
-- Prometheus scrapes both collectors, the API load-test service, and the realtime WebSocket and
-  SSE servers directly when their labs are running.
+- Prometheus scrapes both collectors, the API load-test service, and the realtime WebSocket, SSE,
+  and long-polling servers directly when their labs are running.
 - Grafana provisions the shared Prometheus and Jaeger data sources and lab-specific dashboards.
 - Seq stores API load-test logs and traces.
 - Jaeger stores distributed-app traces.

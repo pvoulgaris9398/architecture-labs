@@ -66,7 +66,7 @@ Each lab should document:
 | --- | --- | --- | --- |
 | [API load test](labs/api-load-test-example/README.md) | How do SQL query latency and indexing affect API latency and connection-pool pressure? | .NET 10, SQL Server, k6, OpenTelemetry, Prometheus, Grafana | In progress |
 | [Distributed app example](labs/distributed-app-example/README.md) | How do cache-aside reads, synchronous gRPC calls, and asynchronous messages interact in a polyglot system? | React, .NET 10, Python, PostgreSQL, Redis, RabbitMQ, OpenTelemetry, Prometheus, Grafana, Jaeger | In progress |
-| [Realtime communication](labs/realtime-communication-lab/README.md) | How do realtime transports, brokers, and delivery controls compare under equivalent workloads? | .NET 10, WebSockets, SSE; SignalR, long polling, gRPC streaming, RabbitMQ, Kafka, and MQTT planned | In progress |
+| [Realtime communication](labs/realtime-communication-lab/README.md) | How do realtime transports, brokers, and delivery controls compare under equivalent workloads? | .NET 10, WebSockets, SSE, long polling; SignalR, gRPC streaming, RabbitMQ, Kafka, and MQTT planned | In progress |
 
 The first lab was migrated from the standalone `api-load-test-example` repository. Its
 [source provenance](labs/api-load-test-example/SOURCE.md) records the originating repository and

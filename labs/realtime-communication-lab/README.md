@@ -1,6 +1,6 @@
 # Realtime communication lab
 
-Status: **In progress**. The raw WebSocket baseline is complete and SSE is runnable; the other
+Status: **In progress**. WebSocket is complete; SSE and long polling are runnable; the other
 comparisons are planned.
 
 ## Question
@@ -38,7 +38,7 @@ realtime-communication-lab/
 │   ├── websocket/          # Runnable migrated baseline
 │   ├── signalr/            # Planned
 │   ├── sse/                # Runnable SSE implementation
-│   ├── long-polling/       # Planned
+│   ├── long-polling/       # Runnable long-polling implementation
 │   └── grpc-streaming/     # Planned
 ├── brokers/
 │   ├── rabbitmq/           # Planned
@@ -110,6 +110,29 @@ the SSE server's host port `5001`; the WebSocket and SSE application code remain
 Prometheus metrics are available directly at <http://127.0.0.1:5001/metrics>, and Grafana
 provisions **Realtime Communication / SSE outbound queues**.
 
+## Run the long-polling walkthrough
+
+Start the independent long-polling server, then rebuild the shared UI so its proxy and new tab are
+available:
+
+```bash
+cd labs/realtime-communication-lab/transports/long-polling
+docker compose config --quiet
+docker compose up --build -d
+
+cd ../websocket
+docker compose up --build
+```
+
+Open <http://127.0.0.1:15173> and select **Long polling**. Start polling, publish an event, and
+watch the held HTTP request complete before the client immediately opens the next request. Stop
+polling to observe cancellation through `AbortController`. The UI proxies `/long-polling/*` to
+the independent server on host port `5002`.
+
+Prometheus metrics are available at <http://127.0.0.1:5002/metrics>. Grafana provisions
+**Realtime Communication / Long polling requests**, showing active held requests, request
+outcomes, returned events, and wait duration.
+
 ## Run the WebSocket baseline
 
 Requirements: Docker with Docker Compose v2, or the .NET 10 SDK for a local build.
@@ -156,6 +179,14 @@ cd labs/realtime-communication-lab/transports/websocket
 dotnet tool restore
 dotnet build WebSocketDemo.slnx
 dotnet csharpier check src/Server tests/Server.IntegrationTests
+dotnet run --project tests/Server.IntegrationTests
+docker compose config --quiet
+docker compose build
+
+dotnet csharpier check ../long-polling/src/Server \
+  ../long-polling/tests/Server.IntegrationTests
+cd ../long-polling
+dotnet build LongPollingDemo.slnx
 dotnet run --project tests/Server.IntegrationTests
 docker compose config --quiet
 docker compose build

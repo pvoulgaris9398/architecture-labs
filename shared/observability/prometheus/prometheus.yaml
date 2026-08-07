@@ -26,6 +26,10 @@ scrape_configs:
     static_configs:
       - targets: [architecture-labs-realtime-sse-server:8080]
 
+  - job_name: realtime-long-polling
+    static_configs:
+      - targets: [architecture-labs-realtime-long-polling-server:8080]
+
   - job_name: windows-host-os
     static_configs:
       - targets: [host.docker.internal:9182]

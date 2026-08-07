@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import WebSocketWalkthrough from './WebSocketWalkthrough';
 import SseWalkthrough from './SseWalkthrough';
+import LongPollingWalkthrough from './LongPollingWalkthrough';
 
-type View = 'overview' | 'websocket' | 'sse';
+type View = 'overview' | 'websocket' | 'sse' | 'long-polling';
 
 const areas = [
   {
@@ -109,6 +110,9 @@ export default function App() {
           </span>
           <span>Realtime Communication Lab</span>
         </button>
+        <button type="button" className={view === 'long-polling' ? 'view-tab active' : 'view-tab'} aria-current={view === 'long-polling' ? 'page' : undefined} onClick={() => setView('long-polling')}>
+          Long polling <span className="tab-available">Available</span>
+        </button>
 
         <div className="status" aria-label="Application status: interactive lab ready">
           <span className="status-dot" aria-hidden="true" />
@@ -153,7 +157,7 @@ export default function App() {
         <Overview openWebSocket={() => setView('websocket')} />
       ) : view === 'websocket' ? (
         <WebSocketWalkthrough />
-      ) : <SseWalkthrough />}
+      ) : view === 'sse' ? <SseWalkthrough /> : <LongPollingWalkthrough />}
 
       <footer>
         <span>Start simple. Measure carefully.</span>
