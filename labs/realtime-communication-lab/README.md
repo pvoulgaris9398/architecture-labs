@@ -1,6 +1,7 @@
 # Realtime communication lab
 
-Status: **In progress**. The raw WebSocket baseline is runnable; the other comparisons are planned.
+Status: **In progress**. The raw WebSocket baseline is complete and SSE is runnable; the other
+comparisons are planned.
 
 ## Question
 
@@ -23,6 +24,11 @@ The migrated baseline is a .NET 10 server using ASP.NET Core's raw WebSocket sup
 The in-memory event store is deliberately non-durable. Restarting the server loses its events.
 This configuration is for local experimentation and is not production guidance.
 
+The independent SSE implementation under `transports/sse` provides one-way event delivery,
+`Last-Event-ID` replay, bounded per-client channels, a controlled slow-client experiment, and
+OpenTelemetry Prometheus metrics. Start both transport Compose projects to use both walkthrough
+tabs.
+
 ## Layout
 
 ```text
@@ -31,7 +37,7 @@ realtime-communication-lab/
 ├── transports/
 │   ├── websocket/          # Runnable migrated baseline
 │   ├── signalr/            # Planned
-│   ├── sse/                # Planned
+│   ├── sse/                # Runnable SSE implementation
 │   ├── long-polling/       # Planned
 │   └── grpc-streaming/     # Planned
 ├── brokers/
@@ -85,6 +91,24 @@ npx --yes pnpm@11.16.0 dev
 ```
 
 Vite proxies the same paths to the server at `http://127.0.0.1:5000`.
+
+## Run the SSE walkthrough
+
+Start the independent SSE server, then run the shared UI from the WebSocket Compose project:
+
+```bash
+cd labs/realtime-communication-lab/transports/sse
+docker compose config --quiet
+docker compose up --build -d
+
+cd ../websocket
+docker compose up --build
+```
+
+Open <http://127.0.0.1:15173> and select **SSE**. The UI proxies `/sse/*` through its container to
+the SSE server's host port `5001`; the WebSocket and SSE application code remain independent.
+Prometheus metrics are available directly at <http://127.0.0.1:5001/metrics>, and Grafana
+provisions **Realtime Communication / SSE outbound queues**.
 
 ## Run the WebSocket baseline
 

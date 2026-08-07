@@ -1,0 +1,79 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [{ "expr": "{__name__=\"sse.connections.active\"}", "legendFormat": "{{connection_mode}}" }],
+      "title": "Active SSE connections",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "targets": [
+        { "expr": "{__name__=\"sse.outbound.queue.depth\"}", "legendFormat": "depth {{connection_mode}}" },
+        { "expr": "{__name__=\"sse.outbound.queue.capacity\"}", "legendFormat": "capacity {{connection_mode}}" }
+      ],
+      "title": "SSE outbound queue",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "targets": [
+        { "expr": "sum by (connection_mode) (rate({__name__=\"sse.outbound.messages.sent_total\"}[1m]))", "legendFormat": "sent {{connection_mode}}" },
+        { "expr": "sum by (connection_mode) (rate({__name__=\"sse.outbound.backpressure.waits_total\"}[1m]))", "legendFormat": "waits {{connection_mode}}" }
+      ],
+      "title": "SSE delivery and backpressure rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 8 },
+      "id": 4,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{ "expr": "sum by (connection_mode) ({__name__=\"sse.outbound.backpressure.waits_total\"})", "legendFormat": "{{connection_mode}}" }],
+      "title": "Backpressure waits (total)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 8 },
+      "id": 5,
+      "options": { "reduceOptions": { "calcs": ["max"], "fields": "", "values": false } },
+      "targets": [{ "expr": "{__name__=\"sse.outbound.queue.depth\"}", "legendFormat": "{{connection_mode}}" }],
+      "title": "Maximum queue depth",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 8 },
+      "id": 6,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, connection_mode) (increase({__name__=\"sse.outbound.queue.delay_milliseconds_bucket\"}[$__range])))", "instant": true, "legendFormat": "{{connection_mode}}" }],
+      "title": "Queue delay p95 (range)",
+      "type": "stat"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 41,
+  "tags": ["architecture-labs", "sse", "backpressure"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timezone": "browser",
+  "title": "SSE outbound queues",
+  "uid": "realtime-sse-outbound",
+  "version": 1
+}

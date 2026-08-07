@@ -16,6 +16,8 @@ services:
       - "15173:80"
     networks:
       - observability
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - server
 

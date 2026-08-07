@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import WebSocketWalkthrough from './WebSocketWalkthrough';
+import SseWalkthrough from './SseWalkthrough';
 
-type View = 'overview' | 'websocket';
+type View = 'overview' | 'websocket' | 'sse';
 
 const areas = [
   {
@@ -137,17 +138,22 @@ export default function App() {
           SignalR
           <span>Planned</span>
         </button>
-        <button type="button" className="view-tab" disabled>
+        <button
+          type="button"
+          className={view === 'sse' ? 'view-tab active' : 'view-tab'}
+          aria-current={view === 'sse' ? 'page' : undefined}
+          onClick={() => setView('sse')}
+        >
           SSE
-          <span>Planned</span>
+          <span className="tab-available">Available</span>
         </button>
       </nav>
 
       {view === 'overview' ? (
         <Overview openWebSocket={() => setView('websocket')} />
-      ) : (
+      ) : view === 'websocket' ? (
         <WebSocketWalkthrough />
-      )}
+      ) : <SseWalkthrough />}
 
       <footer>
         <span>Start simple. Measure carefully.</span>

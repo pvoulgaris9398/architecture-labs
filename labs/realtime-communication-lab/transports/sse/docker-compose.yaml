@@ -1,0 +1,18 @@
+name: architecture-labs-realtime-sse
+
+networks:
+  observability:
+    external: true
+    name: architecture-labs-observability
+
+services:
+  server:
+    build:
+      context: ./src/Server
+    container_name: architecture-labs-realtime-sse-server
+    ports:
+      - "5001:8080"
+    networks:
+      - observability
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development

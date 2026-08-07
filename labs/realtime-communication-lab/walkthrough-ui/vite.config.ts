@@ -8,6 +8,10 @@ export default defineConfig({
         target: 'ws://127.0.0.1:5000',
         ws: true,
       },
+      '/sse': {
+        target: 'http://127.0.0.1:5001',
+        rewrite: (path) => path.replace(/^\/sse/, ''),
+      },
     },
   },
 });
