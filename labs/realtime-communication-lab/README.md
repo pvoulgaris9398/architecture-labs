@@ -133,6 +133,14 @@ Prometheus metrics are available at <http://127.0.0.1:5002/metrics>. Grafana pro
 **Realtime Communication / Long polling requests**, showing active held requests, request
 outcomes, returned events, and wait duration.
 
+## Benchmark design
+
+The controlled steady-state broadcast contract, .NET load-generator commands, measured profiles,
+result schema, resumable runner, and limitations are documented in the
+[benchmark guide](benchmarks/README.md). The
+[August 9, 2026 transport-mechanics pilot](benchmarks/results/2026-08-09-transport-mechanics-pilot.md)
+records exploratory short-window evidence; it is not a settled transport comparison.
+
 ## Run the WebSocket baseline
 
 Requirements: Docker with Docker Compose v2, or the .NET 10 SDK for a local build.
@@ -190,8 +198,12 @@ dotnet build LongPollingDemo.slnx
 dotnet run --project tests/Server.IntegrationTests
 docker compose config --quiet
 docker compose build
+
+cd ../../benchmarks
+dotnet build RealtimeBenchmarks.slnx
 ```
 
-No controlled benchmark has been run yet. Workload definition, controlled variables, success
-criteria, machine characteristics, warm-up, measurement window, software versions, and limitations
-must be recorded before drawing conclusions.
+An exploratory controlled-workload pilot has been run, but its two repetitions and short windows do
+not support settled performance conclusions. A longer comparison must preserve the documented
+workload definition, controlled variables, success criteria, machine characteristics, warm-up,
+measurement window, software versions, and limitations.

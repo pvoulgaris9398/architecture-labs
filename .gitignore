@@ -8,5 +8,6 @@
 **/dist/
 **/.pnpm-store/
 labs/api-load-test-example/results/local/
+labs/realtime-communication-lab/benchmarks/results/local/
 *.user
 *.suo
