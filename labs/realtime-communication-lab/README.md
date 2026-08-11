@@ -1,7 +1,7 @@
 # Realtime communication lab
 
-Status: **In progress**. WebSocket is complete; SSE and long polling are runnable; the other
-comparisons are planned.
+Status: **In progress**. WebSocket is complete; SSE, long polling, and gRPC server streaming are
+runnable; the other comparisons are planned.
 
 ## Question
 
@@ -39,7 +39,7 @@ realtime-communication-lab/
 │   ├── signalr/            # Planned
 │   ├── sse/                # Runnable SSE implementation
 │   ├── long-polling/       # Runnable long-polling implementation
-│   └── grpc-streaming/     # Planned
+│   └── grpc-streaming/     # Runnable native gRPC server streaming
 ├── brokers/
 │   ├── rabbitmq/           # Planned
 │   ├── kafka/              # Planned
@@ -133,6 +133,26 @@ Prometheus metrics are available at <http://127.0.0.1:5002/metrics>. Grafana pro
 **Realtime Communication / Long polling requests**, showing active held requests, request
 outcomes, returned events, and wait duration.
 
+## Run the gRPC streaming sample
+
+The native gRPC sample is intentionally separate from the browser walkthrough because browsers do
+not consume native gRPC without an additional gRPC-Web proxy. Start the server and use its .NET
+console subscriber:
+
+```bash
+cd labs/realtime-communication-lab/transports/grpc-streaming
+docker compose config --quiet
+docker compose up --build -d
+dotnet run --project src/Client -- http://127.0.0.1:5003
+```
+
+The sample provides unary publishing, server streaming, bounded per-subscriber channels, replay
+from `after_id`, and a controlled slow-consumer delay. See the
+[gRPC streaming README](transports/grpc-streaming/README.md) for the `grpcurl` publish command,
+limitations, and validation steps. The
+[gRPC streaming runbook](transports/grpc-streaming/doc/runbook.md) provides the complete manual
+exercise and expected results.
+
 ## Benchmark design
 
 The controlled steady-state broadcast contract, .NET load-generator commands, measured profiles,
@@ -201,6 +221,12 @@ docker compose build
 
 cd ../../benchmarks
 dotnet build RealtimeBenchmarks.slnx
+
+cd ../transports/grpc-streaming
+dotnet build GrpcStreamingDemo.slnx
+dotnet run --project tests/Server.IntegrationTests
+docker compose config --quiet
+docker compose build
 ```
 
 An exploratory controlled-workload pilot has been run, but its two repetitions and short windows do

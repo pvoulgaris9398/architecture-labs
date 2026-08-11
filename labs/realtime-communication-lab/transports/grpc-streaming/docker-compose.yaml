@@ -1,0 +1,24 @@
+name: architecture-labs-realtime-grpc-streaming
+
+networks:
+  observability:
+    external: true
+    name: architecture-labs-observability
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: src/Server/Dockerfile
+    container_name: architecture-labs-realtime-grpc-streaming-server
+    ports:
+      - "5003:8080"
+      - "5004:8081"
+    networks:
+      - observability
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Kestrel__Endpoints__Grpc__Url: http://+:8080
+      Kestrel__Endpoints__Grpc__Protocols: Http2
+      Kestrel__Endpoints__Metrics__Url: http://+:8081
+      Kestrel__Endpoints__Metrics__Protocols: Http1

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option csharp_namespace = "Realtime.Grpc";
+
+package realtime;
+
+service RealtimeTransport {
+  rpc Subscribe (SubscribeRequest) returns (stream RealtimeEvent);
+  rpc Publish (PublishRequest) returns (RealtimeEvent);
+}
+
+message SubscribeRequest {
+  int64 after_id = 1;
+  int32 send_delay_ms = 2;
+}
+
+message PublishRequest {
+  string message = 1;
+}
+
+message RealtimeEvent {
+  int64 id = 1;
+  string message = 2;
+  string created_at_utc = 3;
+}
