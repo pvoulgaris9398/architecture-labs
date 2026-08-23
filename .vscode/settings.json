@@ -1,5 +1,6 @@
 {
     "window.zoomLevel": 1,
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
     "files.exclude": {
         "**/.git": true,
         "**/.svn": true,
