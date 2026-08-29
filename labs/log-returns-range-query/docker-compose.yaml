@@ -1,0 +1,14 @@
+name: log-returns-range-query
+
+services:
+  db-server:
+    extends:
+      file: ../../shared/sqlserver/service.yaml
+      service: sqlserver-base
+    ports:
+      - "1435:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+volumes:
+  sqlserver-data:

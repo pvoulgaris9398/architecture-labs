@@ -9,6 +9,8 @@
 ## Working conventions
 
 - Prefer Bash syntax for commands, scripts, and documentation.
+- Prefer concise documentation. Suggest substantial documentation or scope expansions and wait for
+  approval before adding them.
 - Preserve the user's uncommitted changes. Do not commit, push, publish, or rewrite Git history;
   the user manages Git and GitHub.
 - Keep changes focused and avoid unrelated formatting or generated-file churn.
