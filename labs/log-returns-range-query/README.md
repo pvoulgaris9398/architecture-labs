@@ -39,6 +39,11 @@ JOIN dbo.ScenarioResult result ON result.run_id = run.run_id
 ORDER BY run.started_at DESC, result.scenario_id, result.storage_type;
 ```
 
+## Scenarios
+
+- [`narrow-lookup`](scenarios/narrow-lookup/README.md): interactively compare one security over one
+  calendar year in SSMS, including correctness values, I/O and timing statistics, and actual plans.
+
 ## Connect with sqlcmd
 
 With the container running and `sqlcmd` installed on your host, connect through port `1435`:
