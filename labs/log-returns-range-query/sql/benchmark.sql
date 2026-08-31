@@ -12,6 +12,7 @@ DECLARE @columnstore_checksum float = 0;
 DECLARE @started_at datetime2;
 DECLARE @rowstore_ms bigint;
 DECLARE @columnstore_ms bigint;
+DECLARE @run_id uniqueidentifier = '$(RunId)';
 
 -- Warm both access paths before measurement.
 SELECT @value = SUM(log_return) FROM dbo.ReturnsRowstore
@@ -51,6 +52,16 @@ BEGIN
     SET @iteration += 1;
 END;
 SET @columnstore_ms = DATEDIFF_BIG(millisecond, @started_at, SYSDATETIME());
+
+INSERT dbo.ScenarioResult
+(
+    run_id, scenario_id, result_type, storage_type, elapsed_ms, checksum, passed
+)
+VALUES
+    (@run_id, 'one-year-ranges-1000', 'benchmark', 'rowstore', @rowstore_ms,
+        @rowstore_checksum, IIF(ABS(@rowstore_checksum - @columnstore_checksum) <= 1e-12, 1, 0)),
+    (@run_id, 'one-year-ranges-1000', 'benchmark', 'columnstore', @columnstore_ms,
+        @columnstore_checksum, IIF(ABS(@rowstore_checksum - @columnstore_checksum) <= 1e-12, 1, 0));
 
 SELECT @iterations AS iterations, @rowstore_ms AS rowstore_ms,
     @columnstore_ms AS columnstore_ms, @rowstore_checksum AS rowstore_checksum,

@@ -29,6 +29,16 @@ canonical ranges. A validation failure stops the run. It then runs warm-cache qu
 tables. Stop the container with `docker compose down`; add `--volumes` only if you intentionally
 want to delete the lab database.
 
+Each execution is retained in `dbo.ExperimentRun`; its correctness and benchmark rows are retained
+in `dbo.ScenarioResult`. Dataset rebuilds preserve this result history. Inspect recent runs with:
+
+```sql
+SELECT run.started_at, run.status, result.*
+FROM dbo.ExperimentRun run
+JOIN dbo.ScenarioResult result ON result.run_id = run.run_id
+ORDER BY run.started_at DESC, result.scenario_id, result.storage_type;
+```
+
 ## Connect with sqlcmd
 
 With the container running and `sqlcmd` installed on your host, connect through port `1435`:

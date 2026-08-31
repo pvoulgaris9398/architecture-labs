@@ -7,6 +7,47 @@ GO
 
 SET NOCOUNT ON;
 
+IF OBJECT_ID(N'dbo.ExperimentRun', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ExperimentRun
+    (
+        run_id uniqueidentifier NOT NULL PRIMARY KEY,
+        started_at datetime2 NOT NULL,
+        completed_at datetime2 NULL,
+        sql_server_version nvarchar(256) NOT NULL,
+        status varchar(20) NOT NULL,
+        CONSTRAINT CK_ExperimentRun_Status CHECK (status IN ('running', 'passed', 'failed'))
+    );
+END;
+
+IF OBJECT_ID(N'dbo.ScenarioResult', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ScenarioResult
+    (
+        run_id uniqueidentifier NOT NULL,
+        scenario_id varchar(100) NOT NULL,
+        result_type varchar(20) NOT NULL,
+        storage_type varchar(20) NOT NULL,
+        asset_id int NULL,
+        start_date date NULL,
+        end_date date NULL,
+        observation_count bigint NULL,
+        simple_return_result float NULL,
+        log_return_result float NULL,
+        absolute_delta float NULL,
+        relative_delta float NULL,
+        elapsed_ms bigint NULL,
+        checksum float NULL,
+        passed bit NOT NULL,
+        CONSTRAINT PK_ScenarioResult
+            PRIMARY KEY (run_id, scenario_id, result_type, storage_type),
+        CONSTRAINT FK_ScenarioResult_ExperimentRun
+            FOREIGN KEY (run_id) REFERENCES dbo.ExperimentRun(run_id),
+        CONSTRAINT CK_ScenarioResult_Type CHECK (result_type IN ('correctness', 'benchmark'))
+    );
+END;
+GO
+
 DROP TABLE IF EXISTS dbo.ReturnsRowstore;
 DROP TABLE IF EXISTS dbo.ReturnsColumnstore;
 

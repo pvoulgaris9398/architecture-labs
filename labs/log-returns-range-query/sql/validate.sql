@@ -4,6 +4,7 @@ SET XACT_ABORT ON;
 DECLARE @expected_rows bigint = 10000000;
 DECLARE @absolute_tolerance float = 1e-12;
 DECLARE @relative_tolerance float = 1e-12;
+DECLARE @run_id uniqueidentifier = '$(RunId)';
 DECLARE @rowstore_rows bigint = (SELECT COUNT_BIG(*) FROM dbo.ReturnsRowstore);
 DECLARE @columnstore_rows bigint = (SELECT COUNT_BIG(*) FROM dbo.ReturnsColumnstore);
 
@@ -57,6 +58,7 @@ OR EXISTS
 
 CREATE TABLE #Scenarios
 (
+    scenario_id varchar(100) NOT NULL UNIQUE,
     scenario varchar(40) NOT NULL PRIMARY KEY,
     asset_id int NOT NULL,
     start_date date NOT NULL,
@@ -64,14 +66,15 @@ CREATE TABLE #Scenarios
     expect_observations bit NOT NULL
 );
 
-INSERT #Scenarios (scenario, asset_id, start_date, end_date, expect_observations)
+INSERT #Scenarios (scenario_id, scenario, asset_id, start_date, end_date, expect_observations)
 VALUES
-    ('one trading day', 42, '1990-01-01', '1990-01-02', 1),
-    ('range crossing a weekend', 42, '1990-01-05', '1990-01-09', 1),
-    ('empty weekend range', 42, '1990-01-06', '1990-01-07', 0);
+    ('single-trading-day', 'one trading day', 42, '1990-01-01', '1990-01-02', 1),
+    ('cross-weekend', 'range crossing a weekend', 42, '1990-01-05', '1990-01-09', 1),
+    ('empty-weekend', 'empty weekend range', 42, '1990-01-06', '1990-01-07', 0);
 
-INSERT #Scenarios (scenario, asset_id, start_date, end_date, expect_observations)
-SELECT '252 trading observations', 42, MIN(trading_date), DATEADD(day, 1, MAX(trading_date)), 1
+INSERT #Scenarios (scenario_id, scenario, asset_id, start_date, end_date, expect_observations)
+SELECT 'trading-year-252', '252 trading observations', 42,
+    MIN(trading_date), DATEADD(day, 1, MAX(trading_date)), 1
 FROM
 (
     SELECT TOP (252) trading_date
@@ -80,13 +83,15 @@ FROM
     ORDER BY trading_date
 ) trading_year;
 
-INSERT #Scenarios (scenario, asset_id, start_date, end_date, expect_observations)
-SELECT 'full security history', 42, MIN(trading_date), DATEADD(day, 1, MAX(trading_date)), 1
+INSERT #Scenarios (scenario_id, scenario, asset_id, start_date, end_date, expect_observations)
+SELECT 'full-security-history', 'full security history', 42,
+    MIN(trading_date), DATEADD(day, 1, MAX(trading_date)), 1
 FROM dbo.ReturnsRowstore
 WHERE asset_id = 42;
 
 CREATE TABLE #ValidationResults
 (
+    scenario_id varchar(100) NOT NULL,
     scenario varchar(40) NOT NULL,
     storage_type varchar(20) NOT NULL,
     asset_id int NOT NULL,
@@ -102,6 +107,7 @@ CREATE TABLE #ValidationResults
 
 INSERT #ValidationResults
 SELECT
+    scenario.scenario_id,
     scenario.scenario,
     storage.storage_type,
     scenario.asset_id,
@@ -173,6 +179,18 @@ CROSS APPLY
         END
     )
 ) scale(denominator);
+
+INSERT dbo.ScenarioResult
+(
+    run_id, scenario_id, result_type, storage_type, asset_id, start_date, end_date,
+    observation_count, simple_return_result, log_return_result, absolute_delta,
+    relative_delta, passed
+)
+SELECT
+    @run_id, scenario_id, 'correctness', storage_type, asset_id, start_date, end_date,
+    observation_count, compounded_simple_return, compounded_log_return, absolute_delta,
+    relative_delta, passed
+FROM #ValidationResults;
 
 SELECT
     scenario,
