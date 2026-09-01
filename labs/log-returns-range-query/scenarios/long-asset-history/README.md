@@ -17,6 +17,14 @@ keeps short rowstore lookups above the container clock's resolution. Divide `ela
 by `executions_per_sample` to obtain the per-execution value. A complete run retains 1,800 samples
 and takes roughly ten times as long as the earlier single-asset sweep.
 
+Generate a Markdown summary and SVG chart for the most recent successful run with:
+
+```bash
+dotnet run report.cs
+```
+
+Reports are written under the ignored `results/local/<run-id>/` directory.
+
 ## Analyze
 
 This query returns the pooled graph-ready median across all sampled assets for each layout and
