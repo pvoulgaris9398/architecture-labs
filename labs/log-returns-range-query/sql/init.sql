@@ -46,6 +46,70 @@ BEGIN
         CONSTRAINT CK_ScenarioResult_Type CHECK (result_type IN ('correctness', 'benchmark'))
     );
 END;
+
+IF OBJECT_ID(N'dbo.BenchmarkSample', N'U') IS NULL
+BEGIN
+    EXEC(N'
+        CREATE TABLE dbo.BenchmarkSample
+        (
+            run_id uniqueidentifier NOT NULL,
+            scenario_id varchar(100) NOT NULL,
+            sample_point int NOT NULL,
+            repetition int NOT NULL,
+            storage_type varchar(20) NOT NULL,
+            execution_position tinyint NOT NULL,
+            asset_id int NOT NULL,
+            start_date date NOT NULL,
+            end_date date NOT NULL,
+            observation_count bigint NOT NULL,
+            executions_per_sample smallint NOT NULL,
+            elapsed_microseconds bigint NOT NULL,
+            checksum float NULL,
+            CONSTRAINT PK_BenchmarkSample PRIMARY KEY
+                (run_id, scenario_id, asset_id, sample_point, repetition, storage_type),
+            CONSTRAINT FK_BenchmarkSample_ExperimentRun
+                FOREIGN KEY (run_id) REFERENCES dbo.ExperimentRun(run_id),
+            CONSTRAINT CK_BenchmarkSample_StorageType
+                CHECK (storage_type IN (''rowstore'', ''columnstore'')),
+            CONSTRAINT CK_BenchmarkSample_ExecutionPosition
+                CHECK (execution_position IN (1, 2)),
+            CONSTRAINT CK_BenchmarkSample_Executions CHECK (executions_per_sample > 0),
+            CONSTRAINT CK_BenchmarkSample_Elapsed CHECK (elapsed_microseconds >= 0)
+        );
+    ');
+END;
+
+IF OBJECT_ID(N'dbo.BenchmarkSample', N'U') IS NOT NULL
+AND NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes index_definition
+    JOIN sys.index_columns index_column
+      ON index_column.object_id = index_definition.object_id
+     AND index_column.index_id = index_definition.index_id
+    JOIN sys.columns column_definition
+      ON column_definition.object_id = index_column.object_id
+     AND column_definition.column_id = index_column.column_id
+    WHERE index_definition.object_id = OBJECT_ID(N'dbo.BenchmarkSample')
+      AND index_definition.is_primary_key = 1
+      AND index_column.key_ordinal > 0
+      AND column_definition.name = N'asset_id'
+)
+BEGIN
+    EXEC(N'ALTER TABLE dbo.BenchmarkSample DROP CONSTRAINT PK_BenchmarkSample;');
+    EXEC(N'ALTER TABLE dbo.BenchmarkSample ADD CONSTRAINT PK_BenchmarkSample PRIMARY KEY
+        (run_id, scenario_id, asset_id, sample_point, repetition, storage_type);');
+END;
+
+IF COL_LENGTH(N'dbo.BenchmarkSample', N'executions_per_sample') IS NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.BenchmarkSample ADD executions_per_sample smallint NULL;');
+    EXEC(N'UPDATE dbo.BenchmarkSample SET executions_per_sample = 1;');
+    EXEC(N'ALTER TABLE dbo.BenchmarkSample
+        ALTER COLUMN executions_per_sample smallint NOT NULL;');
+    EXEC(N'ALTER TABLE dbo.BenchmarkSample ADD CONSTRAINT CK_BenchmarkSample_Executions
+        CHECK (executions_per_sample > 0);');
+END;
 GO
 
 DROP TABLE IF EXISTS dbo.ReturnsRowstore;

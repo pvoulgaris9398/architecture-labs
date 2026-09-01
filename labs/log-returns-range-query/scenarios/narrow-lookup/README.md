@@ -20,6 +20,10 @@ hypothesis until the measurements and actual execution plans support it.
 The script is read-only and re-runnable. Change the three parameters at the top to explore another
 security or half-open date range. Keep the same parameters for both layouts.
 
+Alternatively, run `./run.sh` from this scenario directory to rebuild and validate the deterministic
+dataset and then run only this scenario through `sqlcmd`. Use SSMS when you need the actual execution
+plans described below.
+
 ## Review
 
 Confirm first that both result rows have the same observation count and that `return_from_logs` and
@@ -36,4 +40,3 @@ Confirm first that both result rows have the same observation count and that `re
 The script fixes `MAXDOP 1` and uses a warm cache. It does not alternate execution order, collect
 repetitions, or calculate a median, so interactive timings are exploratory rather than benchmark
 conclusions.
-

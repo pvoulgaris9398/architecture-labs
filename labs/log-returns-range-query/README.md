@@ -23,11 +23,20 @@ docker compose up -d
 ./run.sh
 ```
 
+The root runner executes the automated benchmark set. To run exactly one documented scenario, run
+its local wrapper instead:
+
+```bash
+cd scenarios/long-asset-history
+./run.sh
+```
+
 The setup creates 10,000,000 rows in each table. Before benchmarking, `run.sh` verifies dataset
 invariants and compares `PRODUCT(1 + simple_return) - 1` with `EXP(SUM(log_return)) - 1` for fixed
 canonical ranges. A validation failure stops the run. It then runs warm-cache queries against both
-tables. Stop the container with `docker compose down`; add `--volumes` only if you intentionally
-want to delete the lab database.
+tables, followed by a repeated sweep over increasingly long ranges for one asset. Stop the
+container with `docker compose down`; add `--volumes` only if you intentionally want to delete the
+lab database.
 
 Each execution is retained in `dbo.ExperimentRun`; its correctness and benchmark rows are retained
 in `dbo.ScenarioResult`. Dataset rebuilds preserve this result history. Inspect recent runs with:
@@ -43,6 +52,8 @@ ORDER BY run.started_at DESC, result.scenario_id, result.storage_type;
 
 - [`narrow-lookup`](scenarios/narrow-lookup/README.md): interactively compare one security over one
   calendar year in SSMS, including correctness values, I/O and timing statistics, and actual plans.
+- [`long-asset-history`](scenarios/long-asset-history/README.md): measure repeated cumulative ranges
+  from 21 through 10,000 observations and retain graph-ready raw samples.
 
 ## Connect with sqlcmd
 
