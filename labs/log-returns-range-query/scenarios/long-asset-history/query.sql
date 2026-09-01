@@ -59,7 +59,7 @@ DECLARE sample_cursor CURSOR LOCAL FAST_FORWARD FOR
     SELECT asset.asset_id, point.sample_point
     FROM @Assets asset
     CROSS JOIN @SamplePoints point
-    ORDER BY asset.asset_id, point.sample_point;
+    ORDER BY point.sample_point, asset.asset_id;
 
 OPEN sample_cursor;
 FETCH NEXT FROM sample_cursor INTO @asset_id, @sample_point;
@@ -88,7 +88,7 @@ BEGIN
     WHILE @repetition <= @repetitions
     BEGIN
         -- Alternate which layout executes first at every repetition and sample point.
-        SET @rowstore_first = IIF((@sample_point + @repetition) % 2 = 0, 1, 0);
+        SET @rowstore_first = IIF((@asset_id + @sample_point + @repetition) % 2 = 0, 1, 0);
         SET @position = 1;
 
         WHILE @position <= 2
@@ -198,7 +198,7 @@ WITH Summary AS
 SELECT DISTINCT
     observation_count,
     storage_type,
-    COUNT(DISTINCT asset_id) OVER (PARTITION BY observation_count, storage_type) AS assets,
+    samples / @repetitions AS assets,
     samples,
     executions_per_sample,
     MIN(microseconds_per_execution) OVER
