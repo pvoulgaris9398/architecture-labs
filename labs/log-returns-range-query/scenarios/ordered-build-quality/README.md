@@ -34,6 +34,17 @@ Expect this run to take longer than the long-history scenario because it copies 
 builds two additional columnstore indexes, and deliberately builds one of them serially. The two
 scenario tables are disposable and are replaced on every run; retained results are preserved.
 
+After the run completes, generate its Markdown report and SVG chart from Git Bash or another
+Unix-like shell:
+
+```bash
+./report.cs
+```
+
+The shebang uses the .NET 10 file-based-app host. On Windows PowerShell, which does not implement
+shebang execution, use `dotnet report.cs`. Reports are written under the ignored
+`results/local/<run-id>/` directory.
+
 ## Inspect
 
 Recent build durations:
