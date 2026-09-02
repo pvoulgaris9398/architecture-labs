@@ -1,3 +1,5 @@
+#!/usr/bin/env -S dotnet run
+
 #:package Microsoft.Data.SqlClient@7.0.2
 
 using System.Globalization;
