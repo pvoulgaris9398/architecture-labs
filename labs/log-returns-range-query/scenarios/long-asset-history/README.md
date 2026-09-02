@@ -25,6 +25,17 @@ dotnet run report.cs
 
 Reports are written under the ignored `results/local/<run-id>/` directory.
 
+## Diagnose physical behavior
+
+Run `diagnose.sql` through SSMS or `sqlcmd` to inspect the latest structurally complete run alongside
+columnstore rowgroup quality, asset segment bounds, candidate segments per sampled asset, and date
+segment bounds.
+
+To compare representative late- and early-crossover assets in SSMS, open `compare-plans.sql`, enable
+**Include Actual Execution Plan** with `Ctrl+M`, and run the script. In the columnstore scan operator,
+compare **Actual Number of Segments** and **Actual Number of Segments Skipped**. The script also
+enables SQL Server I/O and timing statistics.
+
 ## Analyze
 
 This query returns the pooled graph-ready median across all sampled assets for each layout and

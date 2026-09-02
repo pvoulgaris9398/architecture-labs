@@ -15,10 +15,14 @@ BEGIN
         started_at datetime2 NOT NULL,
         completed_at datetime2 NULL,
         sql_server_version nvarchar(256) NOT NULL,
+        expected_benchmark_samples int NULL,
         status varchar(20) NOT NULL,
         CONSTRAINT CK_ExperimentRun_Status CHECK (status IN ('running', 'passed', 'failed'))
     );
 END;
+
+IF COL_LENGTH(N'dbo.ExperimentRun', N'expected_benchmark_samples') IS NULL
+    EXEC(N'ALTER TABLE dbo.ExperimentRun ADD expected_benchmark_samples int NULL;');
 
 IF OBJECT_ID(N'dbo.ScenarioResult', N'U') IS NULL
 BEGIN
@@ -70,13 +74,29 @@ BEGIN
             CONSTRAINT FK_BenchmarkSample_ExperimentRun
                 FOREIGN KEY (run_id) REFERENCES dbo.ExperimentRun(run_id),
             CONSTRAINT CK_BenchmarkSample_StorageType
-                CHECK (storage_type IN (''rowstore'', ''columnstore'')),
+                CHECK (storage_type IN
+                    (''rowstore'', ''columnstore'', ''partial-order'', ''full-order'')),
             CONSTRAINT CK_BenchmarkSample_ExecutionPosition
                 CHECK (execution_position IN (1, 2)),
             CONSTRAINT CK_BenchmarkSample_Executions CHECK (executions_per_sample > 0),
             CONSTRAINT CK_BenchmarkSample_Elapsed CHECK (elapsed_microseconds >= 0)
         );
     ');
+END;
+
+IF EXISTS
+(
+    SELECT 1
+    FROM sys.check_constraints
+    WHERE parent_object_id = OBJECT_ID(N'dbo.BenchmarkSample')
+      AND name = N'CK_BenchmarkSample_StorageType'
+      AND definition NOT LIKE N'%partial-order%'
+)
+BEGIN
+    EXEC(N'ALTER TABLE dbo.BenchmarkSample DROP CONSTRAINT CK_BenchmarkSample_StorageType;');
+    EXEC(N'ALTER TABLE dbo.BenchmarkSample ADD CONSTRAINT CK_BenchmarkSample_StorageType
+        CHECK (storage_type IN
+            (''rowstore'', ''columnstore'', ''partial-order'', ''full-order''));');
 END;
 
 IF OBJECT_ID(N'dbo.BenchmarkSample', N'U') IS NOT NULL

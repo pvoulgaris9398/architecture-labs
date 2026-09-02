@@ -54,6 +54,8 @@ ORDER BY run.started_at DESC, result.scenario_id, result.storage_type;
   calendar year in SSMS, including correctness values, I/O and timing statistics, and actual plans.
 - [`long-asset-history`](scenarios/long-asset-history/README.md): measure repeated cumulative ranges
   from 21 through 10,000 observations across 10 individual assets and retain graph-ready raw samples.
+- [`ordered-build-quality`](scenarios/ordered-build-quality/README.md): compare default best-effort
+  ordering with a documented full-order `ONLINE = ON, MAXDOP = 1` columnstore build.
 
 ## Connect with sqlcmd
 

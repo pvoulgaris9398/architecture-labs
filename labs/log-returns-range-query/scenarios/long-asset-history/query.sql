@@ -30,6 +30,16 @@ VALUES (1), (112), (223), (334), (445), (556), (667), (778), (889), (1000);
 INSERT @SamplePoints (sample_point)
 VALUES (21), (63), (126), (252), (504), (1260), (2520), (5000), (7500), (10000);
 
+DECLARE @expected_samples int =
+    (SELECT COUNT(*) FROM @Assets)
+    * (SELECT COUNT(*) FROM @SamplePoints)
+    * @repetitions
+    * 2;
+
+UPDATE dbo.ExperimentRun
+SET expected_benchmark_samples = COALESCE(expected_benchmark_samples, 0) + @expected_samples
+WHERE run_id = @run_id;
+
 DECLARE warmup_cursor CURSOR LOCAL FAST_FORWARD FOR
     SELECT asset_id FROM @Assets ORDER BY asset_id;
 
@@ -180,6 +190,21 @@ END;
 
 CLOSE sample_cursor;
 DEALLOCATE sample_cursor;
+
+IF (SELECT COUNT(*) FROM dbo.BenchmarkSample
+    WHERE run_id = @run_id AND scenario_id = @scenario_id) <> @expected_samples
+    THROW 50022, 'The long-history sweep did not retain its expected sample count.', 1;
+
+IF EXISTS
+(
+    SELECT asset_id, sample_point, repetition
+    FROM dbo.BenchmarkSample
+    WHERE run_id = @run_id
+      AND scenario_id = @scenario_id
+    GROUP BY asset_id, sample_point, repetition
+    HAVING COUNT(*) <> 2 OR ABS(MAX(checksum) - MIN(checksum)) > 1e-10
+)
+    THROW 50023, 'The long-history sweep contains an incomplete or mismatched sample pair.', 1;
 
 WITH Summary AS
 (
