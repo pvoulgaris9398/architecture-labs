@@ -14,9 +14,60 @@ Start with four selectivity levels to find where the preferred storage layout ch
 | Market time slice | All | 1 year | Broad analytical aggregation |
 | Full aggregation | All | All dates | Maximum scan |
 
-For each scenario, record elapsed time, CPU time, logical reads, rows selected, execution plan,
-result checksum, and columnstore segments read/skipped. Use several repetitions, alternate execution
-order, and report the median.
+Elapsed time is one outcome, not the complete explanation. For each scenario, record elapsed and CPU
+time, logical and physical reads, rows read and returned, memory grant and actual memory use, spills,
+waits, degree of parallelism, the actual execution plan, result checksum, and columnstore segments
+read/skipped. Use several repetitions, alternate execution order, and report the median.
+
+## Measurement model
+
+Use three layers so collection details do not leak into the analysis:
+
+1. The benchmark harness defines the run, controls cache state and execution order, captures wall-clock
+   timing, and assigns stable run, dataset, query, and storage-design identifiers.
+2. SQL Server telemetry captures engine evidence from execution plans, runtime statistics, and DMVs.
+   Treat DMV values as transient and often cumulative: isolate the target execution with before/after
+   snapshots where necessary. Use Query Store for persisted query, plan, runtime, and wait history, but
+   do not assume it replaces per-run harness measurements or every plan-level diagnostic.
+3. Normalized experiment results join both sources into one row (or related rows) per measured
+   execution, with consistent units and explicit missing values. Preserve the raw plan and enough
+   source detail to recalculate summaries.
+
+Memory grant and actual memory use are different measurements. Likewise, distinguish rows read from
+rows returned, logical from physical reads, and requested from observed parallelism. These differences
+often explain why similar elapsed times arise from different resource costs.
+
+## Dataset and query characteristics
+
+Record the dimensions that define each observation rather than relying only on a scenario name:
+
+- Dataset: total row count, distinct securities, observations per security, date span,
+  ordering/distribution, skew, and physical build quality.
+- Query: securities selected, date range, qualifying rows, selectivity, range width, projection and
+  aggregation shape, and warm- or cold-cache state.
+- Physical design: rowstore or columnstore layout, keys and indexes, columnstore ordering and rowgroup
+  quality, plus ClickHouse table ordering and partitioning when that later phase is implemented.
+- Environment: engine and compatibility versions, resource limits, host characteristics, statistics
+  state, concurrency, and requested and observed degree of parallelism.
+
+Vary one characteristic at a time where a controlled comparison is claimed. Use a dataset matrix when
+testing scale, density, ordering, or skew so results are not accidentally attributed to storage design.
+
+## Analysis relationships
+
+Plot relationships that expose engine behavior, not only storage design versus elapsed time:
+
+- selectivity to elapsed time and logical reads;
+- rows read or returned to CPU time and memory use;
+- logical and physical reads to elapsed time;
+- memory grant, memory used, spills, and waits to elapsed time;
+- execution-plan shape and degree of parallelism to elapsed and CPU time;
+- range width and dataset scale to plan choice and resource use.
+
+Look for crossover points: the selectivity, range width, or dataset scale where clustered rowstore and
+ordered clustered columnstore exchange advantage, and later where ClickHouse crosses either SQL Server
+layout. Report the conditions and resource tradeoffs at each crossover rather than declaring a universal
+winner.
 
 ## Evaluation axes
 
@@ -65,7 +116,8 @@ order, and report the median.
 ## Suggested order
 
 1. Implement the four core query scenarios with warm cache and `MAXDOP 1`.
-2. Add storage size, logical reads, CPU time, plans, and segment-elimination evidence.
+2. Add normalized SQL Server telemetry, including reads, CPU, rows, memory, spills, waits, plans,
+   parallelism, storage size, and segment-elimination evidence.
 3. Compare ordered and unordered columnstore layouts.
 4. Evaluate load and modification behavior.
 5. Add parallelism and concurrency only after the single-session baseline is stable.

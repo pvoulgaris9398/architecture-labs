@@ -75,3 +75,6 @@ EXIT
 
 The earlier Python application-code comparison is retained in `notes/python-baseline/`. ClickHouse,
 Snowflake, and dbt are possible later phases but are not implemented yet.
+
+See [`notes/sql-server-evaluation-axes.md`](notes/sql-server-evaluation-axes.md) for the measurement
+model, dataset and query dimensions, SQL Server telemetry guidance, and planned crossover analysis.
