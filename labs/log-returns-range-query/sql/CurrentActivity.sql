@@ -1,5 +1,7 @@
 /*
 
+VIEW SERVER PERFORMANCE STATE required for DMV's
+
 Purpose: Inspect currently executing lab requests, resource counters, waits,
 and blocking sessions.
 

@@ -1,5 +1,7 @@
 /*
 
+VIEW SERVER PERFORMANCE STATE required for DMV's
+
 Purpose: Compare CPU, elapsed time, reads, memory grants, spills, parallelism,
 and columnstore segment elimination for completed rowstore/columnstore queries.
 

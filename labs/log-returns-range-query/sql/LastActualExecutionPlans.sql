@@ -1,5 +1,7 @@
 /*
 
+VIEW SERVER PERFORMANCE STATE required for DMV's
+
 Purpose: Inspect the last known actual plans for cached lab statements and check
 whether last-plan capture and persistent Query Store history are enabled.
 
