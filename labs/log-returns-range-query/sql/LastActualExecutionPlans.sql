@@ -1,7 +1,5 @@
 /*
 
-VIEW SERVER PERFORMANCE STATE required for DMV's
-
 Purpose: Inspect the last known actual plans for cached lab statements and check
 whether last-plan capture and persistent Query Store history are enabled.
 
@@ -26,15 +24,15 @@ than a per-execution actual-plan history. This script does not enable Query Stor
 USE LogReturnsLab;
 GO
 
-SELECT @@VERSION AS engine_version;
+--SELECT @@VERSION AS engine_version;
 
-SELECT name, value
-FROM sys.database_scoped_configurations
-WHERE name = N'LAST_QUERY_PLAN_STATS';
+--SELECT name, value
+--FROM sys.database_scoped_configurations
+--WHERE name = N'LAST_QUERY_PLAN_STATS';
 
-SELECT actual_state_desc, desired_state_desc, wait_stats_capture_mode_desc
-FROM sys.database_query_store_options;
-GO
+--SELECT actual_state_desc, desired_state_desc, wait_stats_capture_mode_desc
+--FROM sys.database_query_store_options;
+--GO
 
 -- Optional: enable capture BEFORE rerunning the workload.
 -- ALTER DATABASE SCOPED CONFIGURATION SET LAST_QUERY_PLAN_STATS = ON;
