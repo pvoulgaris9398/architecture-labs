@@ -5,7 +5,7 @@ scenario_sql=("$@")
 if ((${#scenario_sql[@]} == 0)); then
     scenario_sql=(
         sql/benchmark.sql
-        scenarios/long-asset-history/query.sql
+        scenarios/long-asset-history/timing-baseline/query.sql
     )
 fi
 

@@ -1,3 +1,7 @@
+/* Run in SSMS against the existing dataset after a successful timing baseline.
+   Physical metadata describes the CURRENT tables, not a historical snapshot of
+   the selected run. Candidate segments are bounds-based estimates, not measured
+   segment reads. Use captured actual plans for execution evidence. */
 USE LogReturnsLab;
 GO
 
@@ -20,6 +24,7 @@ CROSS APPLY
       AND sample.scenario_id = @scenario_id
 ) shape
 WHERE run.status = 'passed'
+  AND shape.sample_count > 0
   AND shape.sample_count = shape.asset_count * shape.point_count * shape.repetition_count * 2
   AND NOT EXISTS
   (
@@ -125,4 +130,5 @@ SELECT DISTINCT
     median_microseconds
 FROM Medians
 ORDER BY asset_id, observation_count, storage_type;
+DROP TABLE #Assets;
 GO

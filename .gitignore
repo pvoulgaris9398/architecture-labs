@@ -10,5 +10,6 @@
 labs/api-load-test-example/results/local/
 labs/realtime-communication-lab/benchmarks/results/local/
 labs/log-returns-range-query/scenarios/*/results/local/
+labs/log-returns-range-query/scenarios/long-asset-history/*/results/local/
 *.user
 *.suo

@@ -1,80 +1,35 @@
-# Long Asset History Sweep
+# Long Asset History
 
-## Question
+Status: in progress; timing baseline implemented, diagnostic companion available.
 
-At what range size, if any, does summing one asset's log returns become faster on the ordered
-clustered columnstore than on the clustered rowstore?
+Compare rowstore and ordered columnstore for single-asset cumulative ranges under
+warm-cache, `MAXDOP 1` conditions. Timing answers which layout is faster for a run;
+diagnostics investigates the execution behavior behind it.
 
-The sweep samples 10 individual assets distributed across the table: 1, 112, 223, 334, 445, 556,
-667, 778, 889, and 1,000. For each asset, it measures 10 cumulative ranges from 21 through 10,000
-trading observations beginning at that asset's first observation. Each retained sample times 500
-executions, and each layout produces 9 samples per asset at every point with a warm cache and
-`MAXDOP 1`. Execution order alternates between layouts.
+- [timing-baseline](timing-baseline/README.md): the existing 10-asset, 10-range sweep,
+  with 9 samples of 500 executions per layout. Owns its runner and timing report.
+- [diagnostics](diagnostics/README.md): a bounded subset of the same workload, using
+  the current tables and saved baseline ranges to collect actual plans and resources.
+- `shared/latest-timing-run.sql`: the successful-run selection used by both C# tools.
+  Experiment-specific query execution stays within each sub-scenario.
 
-From this scenario directory, run `./run.sh` to rebuild and validate the deterministic dataset and
-then run only this sweep. Every measurement is retained in `dbo.BenchmarkSample`. Timing a batch
-keeps short rowstore lookups above the container clock's resolution. Divide `elapsed_microseconds`
-by `executions_per_sample` to obtain the per-execution value. A complete run retains 1,800 samples
-and takes roughly ten times as long as the earlier single-asset sweep.
-
-Generate a Markdown summary and SVG chart for the most recent successful run with:
+From this directory, using Bash and .NET 10 SDK:
 
 ```bash
-dotnet run report.cs
+# Rebuilds the deterministic dataset and runs the full timing sweep; can take minutes.
+(cd timing-baseline && ./run.sh)
+# Reads stored measurements; no benchmark execution.
+(cd timing-baseline && dotnet run report.cs)
+# Executes 16 instrumented queries plus warm-ups against the existing tables.
+(cd diagnostics && ./run.sh)
 ```
 
-Reports are written under the ignored `results/local/<run-id>/` directory.
+The timing scenario ID remains `long-asset-history-sweep`, so existing database
+measurements remain usable. New timing reports live in `timing-baseline/results/local/`.
+Previously generated `results/local/` files remain untouched; regenerate from the new
+location when needed. Diagnostics keeps each capture in its own output directory.
 
-## Diagnose physical behavior
-
-Run `diagnose.sql` through SSMS or `sqlcmd` to inspect the latest structurally complete run alongside
-columnstore rowgroup quality, asset segment bounds, candidate segments per sampled asset, and date
-segment bounds.
-
-To compare representative late- and early-crossover assets in SSMS, open `compare-plans.sql`, enable
-**Include Actual Execution Plan** with `Ctrl+M`, and run the script. In the columnstore scan operator,
-compare **Actual Number of Segments** and **Actual Number of Segments Skipped**. The script also
-enables SQL Server I/O and timing statistics.
-
-## Analyze
-
-This query returns the pooled graph-ready median across all sampled assets for each layout and
-observation count in the latest completed run:
-
-```sql
-WITH LatestRun AS
-(
-    SELECT TOP (1) run_id
-    FROM dbo.ExperimentRun
-    WHERE status = 'passed'
-    ORDER BY completed_at DESC
-),
-Medians AS
-(
-    SELECT
-        sample.observation_count,
-        sample.storage_type,
-        PERCENTILE_CONT(0.5) WITHIN GROUP
-            (ORDER BY CAST(sample.elapsed_microseconds AS decimal(18, 3))
-                / sample.executions_per_sample)
-            OVER (PARTITION BY sample.observation_count, sample.storage_type) AS median_microseconds
-    FROM dbo.BenchmarkSample sample
-    JOIN LatestRun run ON run.run_id = sample.run_id
-    WHERE sample.scenario_id = 'long-asset-history-sweep'
-)
-SELECT DISTINCT observation_count, storage_type, median_microseconds
-FROM Medians
-ORDER BY observation_count, storage_type;
-```
-
-Plot `observation_count` on the x-axis and `median_microseconds` on the y-axis, with one series per
-`storage_type`. Before treating an apparent crossover as stable, calculate the same median with
-`asset_id` added to both `SELECT` and `PARTITION BY` to inspect each asset's curve. Also inspect raw
-repetitions and `execution_position`, and run the experiment several times under comparable host
-conditions.
-
-## Limitations
-
-This measures individual-asset queries, not one query spanning multiple assets. It does not yet
-establish whether a crossover changes with date position, cache state, parallelism, concurrency,
-rowgroup quality, or host load.
+Run diagnostics before rebuilding or running `ordered-build-quality`: saved checksums
+can validate results but cannot prove that index layout matches a historical timing run.
+`ordered-build-quality` remains a separate scenario that changes the columnstore build.
+Do not run these workloads concurrently; they share tables and server resources.

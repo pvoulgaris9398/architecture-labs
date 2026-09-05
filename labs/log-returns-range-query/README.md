@@ -27,7 +27,7 @@ The root runner executes the automated benchmark set. To run exactly one documen
 its local wrapper instead:
 
 ```bash
-cd scenarios/long-asset-history
+cd scenarios/long-asset-history/timing-baseline
 ./run.sh
 ```
 
@@ -53,7 +53,8 @@ ORDER BY run.started_at DESC, result.scenario_id, result.storage_type;
 - [`narrow-lookup`](scenarios/narrow-lookup/README.md): interactively compare one security over one
   calendar year in SSMS, including correctness values, I/O and timing statistics, and actual plans.
 - [`long-asset-history`](scenarios/long-asset-history/README.md): measure repeated cumulative ranges
-  from 21 through 10,000 observations across 10 individual assets and retain graph-ready raw samples.
+  from 21 through 10,000 observations across 10 individual assets in `timing-baseline`, with a
+  separate `diagnostics` companion for actual plans and resource evidence.
 - [`ordered-build-quality`](scenarios/ordered-build-quality/README.md): compare default best-effort
   ordering with a documented full-order `ONLINE = ON, MAXDOP = 1` columnstore build.
 
