@@ -21,6 +21,8 @@ The recommended progression is:
 
 The near-term opportunity is not autonomous code approval. It is using AI to help engineers understand, document, test, and modernize a complex legacy estate while preserving human accountability.
 
+The effectiveness of that assistance will depend on whether the software estate makes its architecture, constraints, conventions, and intent explicit enough for both human engineers and AI development agents to navigate safely.
+
 ## Context
 
 [The firm] maintains long-lived applications, databases, scheduled processes, integrations, and reporting workflows. These systems may contain substantial undocumented business knowledge and may process sensitive financial, tax, client, or personally identifiable information.
@@ -64,6 +66,19 @@ Early experiments should produce proposals that humans can inspect, correct, or 
 
 Adoption should expand based on demonstrated quality, safety, and value. Tool usage, token consumption, and anecdotal enthusiasm are not sufficient measures of success.
 
+### Treat AI as an architectural stakeholder
+
+An AI development agent may act as both a consumer of existing components and a future modifier of the system. The design should therefore help it—and the humans reviewing its work—to:
+
+- discover and reuse approved capabilities rather than recreate them;
+- locate the correct implementation point for a requirement;
+- understand component responsibilities, dependencies, and prohibited interactions;
+- identify the likely blast radius of a change;
+- trace requirements through implementation and tests;
+- distinguish documented facts and constraints from unsupported inference.
+
+This does not give AI authority over architecture. It recognizes that explicit, current design information is a prerequisite for safe assistance. Undocumented conventions and tribal knowledge increase the probability of locally plausible but systemically inconsistent changes.
+
 ## Recommended Adoption Stages
 
 | Stage | AI role | Human control | Example |
@@ -106,6 +121,30 @@ The strongest initial candidates combine meaningful effort reduction with low ex
 - Flag common correctness, security, and maintainability concerns.
 - Explain execution plans or potentially problematic SQL patterns.
 - Identify changes involving permissions, sensitive data, or large blast radii for mandatory human review.
+
+## AI-Readiness Assessment
+
+Before allowing an AI development agent to modify a repository or system, assess whether the environment provides enough explicit context and independently verifiable constraints. The objective is not to maximize documentation. It is to supply the minimum reliable context needed to navigate, change, and validate the system safely.
+
+| Dimension | Assessment questions | Useful evidence |
+| --- | --- | --- |
+| Architecture | Are system boundaries, responsibilities, dependencies, and approved interaction patterns explicit? | Current diagrams, architecture descriptions, dependency rules, architecture decision records (ADRs) |
+| Domain intent | Are important terms, invariants, workflows, and business rules documented close to their implementation? | Domain glossary, executable rules, examples, acceptance criteria |
+| Discoverability | Can an agent locate the correct component and existing capability before generating new code? | Repository map, naming conventions, searchable interface documentation, component ownership |
+| Change containment | Are modules and interfaces designed so that a bounded change has a bounded impact? | Clear contracts, dependency direction, encapsulation, impact-analysis tooling |
+| Verification | Can correctness be demonstrated without relying primarily on human intuition? | Characterization, unit, integration, contract, regression, and policy tests |
+| Operational behavior | Are failure modes, telemetry, recovery procedures, and side effects visible? | Logs, metrics, traces, correlation identifiers, runbooks, idempotency and retry rules |
+| Constraints | Are security, privacy, compliance, data-handling, and repository restrictions machine-discoverable where practical? | Policy-as-code, protected paths, approved-tool configuration, automated checks |
+| Design currency | Does documented design describe the actual system, and is it updated when consequential changes are made? | Reviewable documentation changes, ADRs, drift checks, ownership and review dates |
+
+### Readiness interpretation
+
+- **Ready for assistance:** The agent can explain or draft artifacts, but humans must supply missing context and verify all conclusions.
+- **Ready for bounded implementation:** The change area is discoverable and contained, expectations are explicit, and deterministic checks can validate the result before merge.
+- **Ready for delegated decisions:** The permitted decision class, constraints, evidence, escalation conditions, audit trail, and rollback behavior are enforced by the delivery platform.
+- **Not ready:** Critical intent remains tribal, dependencies or blast radius cannot be determined economically, or correctness cannot be independently verified.
+
+The assessment should be applied per repository, subsystem, and task class—not used as a single maturity score for the organization. A system may be ready for documentation assistance while remaining unsuitable for AI-generated production changes.
 
 ## Required Governance Questions
 
@@ -241,6 +280,10 @@ The following previously reviewed resources reinforce specific parts of this fra
 ### Advisory operational analysis
 
 - [Atlassian Automates Root Cause Analysis by Correlating Metrics, Logs and Traces](https://www.infoq.com/news/2026/09/atlassian-automated-rca/) — Illustrates a potentially valuable advisory use case: correlating operational evidence to propose likely causes while engineers retain responsibility for diagnosis and remediation. This would require sufficiently mature logs, metrics, traces, and correlation identifiers.
+
+### AI-ready software design
+
+- [Software Design in the Age of AI](https://towardsdatascience.com/software-design-in-the-age-of-ai/) — Frames AI development agents as consumers and future modifiers of software. It reinforces the need for explicit, current design; discoverable reusable components; navigable dependencies; contained change impact; and traceability from requirements to code and tests.
 
 ## Conclusion
 
