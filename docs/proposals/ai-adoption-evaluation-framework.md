@@ -5,6 +5,7 @@
 - **Type:** Architecture Lab proposal
 - **Horizon:** Medium- to long-term
 - **Disposition:** Evaluate incrementally; do not begin with autonomous production decisions
+- **Primary source:** [Teaching Engineers, Trusting AI: How Education Enabled Autonomous Code Review](https://www.infoq.com/presentations/duolingo-ai-literacy-code-review/)
 
 ## Executive Summary
 
@@ -216,6 +217,30 @@ Proceed beyond the pilot only if the evidence shows that AI assistance:
 - produces output that can be validated economically;
 - fits existing accountability and review practices;
 - remains supportable if a vendor, model, price, or capability changes.
+
+## Related Reading
+
+The following previously reviewed resources reinforce specific parts of this framework.
+
+### Evaluation and production readiness
+
+- [From AI Agent Demo to Production: Automated Testing and Evaluation](https://www.infoq.com/presentations/ai-agent-testing-evaluation/) — Supports the use of repeatable evaluations, observable behavior, production-like scenarios, and explicit success criteria before trusting an agent in consequential workflows.
+
+### Explicit decisions and bounded autonomy
+
+- [Decision Models in Agentic Architectures: From Production to Agent Skills](https://www.infoq.com/presentations/decision-models-agentic-ai/) — Supports separating deterministic business decisions from probabilistic AI behavior. At [the firm], important policies and eligibility rules should remain explicit, testable, versioned, and auditable rather than being buried in prompts.
+
+### Specifications and validation
+
+- [When Spec-Driven Development Pays off](https://www.infoq.com/articles/when-spec-driven-development-pays-off/) — Supports using clear specifications, acceptance criteria, and feedback loops when AI assists with implementation. This is especially applicable when behavior must be preserved during legacy modernization.
+
+### Skills, mentoring, and engineering judgment
+
+- [How Will We Train Developers If AI Does the Routine Work?](https://www.infoq.com/podcasts/train-developers-ai-routine-work/) — Reinforces the need to preserve deliberate learning, debugging ability, and engineering judgment rather than allowing AI to remove the experiences through which developers build expertise.
+
+### Advisory operational analysis
+
+- [Atlassian Automates Root Cause Analysis by Correlating Metrics, Logs and Traces](https://www.infoq.com/news/2026/09/atlassian-automated-rca/) — Illustrates a potentially valuable advisory use case: correlating operational evidence to propose likely causes while engineers retain responsibility for diagnosis and remediation. This would require sufficiently mature logs, metrics, traces, and correlation identifiers.
 
 ## Conclusion
 
