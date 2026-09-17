@@ -8,7 +8,7 @@
 
 Tinybird is a managed ClickHouse platform that combines analytical storage with streaming and batch ingestion, SQL transformations, materialized views, authenticated application programming interface (API) endpoints, and a source-controlled development workflow.
 
-It may be valuable to Loring as a specialized **analytical serving layer** for operational telemetry, historical reporting, and low-latency analytical APIs. It should not own authoritative accounting data, workflow state, approvals, corrections, or operational reconciliation.
+It may be valuable to [firm] as a specialized **analytical serving layer** for operational telemetry, historical reporting, and low-latency analytical APIs. It should not own authoritative accounting data, workflow state, approvals, corrections, or operational reconciliation.
 
 The recommendation is to retain Tinybird as a future experiment candidate. Evaluation should occur only after the SQL Server 2022 migration, estate inventory, and nightly-cycle stabilization establish a measured analytical problem that ordinary SQL Server improvements do not solve adequately.
 
@@ -83,7 +83,7 @@ Potential examples include account activity history, exception trends, tax-proce
 
 Tinybird's documented first-class ingestion paths emphasize HTTP events, Kafka, files, Amazon S3, Google Cloud Storage, and selected connectors. A first-class SQL Server Change Data Capture connector was not identified during this assessment.
 
-Loring would therefore need to introduce and operate an ingestion path such as a C# publisher, controlled file export, or separate Change Data Capture and streaming layer. For a small team, that additional machinery could outweigh the benefits.
+[firm] would therefore need to introduce and operate an ingestion path such as a C# publisher, controlled file export, or separate Change Data Capture and streaming layer. For a small team, that additional machinery could outweigh the benefits.
 
 ### Unproven need for ClickHouse-scale analytics
 
@@ -101,11 +101,11 @@ Mitigations should include:
 - Retaining replayable source data.
 - Restricting Tinybird-specific logic to analytical projection and serving concerns.
 - Keeping authoritative business logic in portable C# or appropriately governed SQL.
-- Placing Loring-owned interfaces in front of Tinybird where the exit cost justifies them.
+- Placing [firm]-owned interfaces in front of Tinybird where the exit cost justifies them.
 
 ### Security, networking, and cost
 
-Shared infrastructure may not satisfy Loring's security or private-networking requirements, while dedicated Enterprise infrastructure may be disproportionate to the workload. Enterprise pricing includes multiple consumption dimensions and contractual commitments.
+Shared infrastructure may not satisfy [firm]'s security or private-networking requirements, while dedicated Enterprise infrastructure may be disproportionate to the workload. Enterprise pricing includes multiple consumption dimensions and contractual commitments.
 
 Any production recommendation requires a security review, data-classification review, network design, support assessment, and representative cost model.
 
@@ -145,7 +145,7 @@ Implement or estimate the equivalent design using SQL Server 2022 with a reporti
 ### Success conditions
 
 - Demonstrably reduces analytical query latency or SQL Server reporting pressure.
-- Requires little recurring operational attention from the Loring team.
+- Requires little recurring operational attention from the [firm] team.
 - Provides predictable reconciliation and replay behavior.
 - Supports source-controlled, testable, and reviewable change.
 - Meets security and networking requirements at a proportionate cost.
@@ -176,7 +176,7 @@ Tinybird is technically credible and potentially valuable, particularly where ap
 
 The principal risks are adding a platform before scale justifies it, creating a non-native SQL Server ingestion path, and allowing an analytical projection to drift into operational authority. A deliberately narrow telemetry experiment provides useful evidence while remaining reversible.
 
-**Current recommendation:** watch, learn, and retain as a bounded lab candidate; do not make it part of the near-term Loring modernization critical path.
+**Current recommendation:** watch, learn, and retain as a bounded lab candidate; do not make it part of the near-term [firm] modernization critical path.
 
 ## References
 
