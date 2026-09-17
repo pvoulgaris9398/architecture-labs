@@ -79,6 +79,21 @@ An AI development agent may act as both a consumer of existing components and a 
 
 This does not give AI authority over architecture. It recognizes that explicit, current design information is a prerequisite for safe assistance. Undocumented conventions and tribal knowledge increase the probability of locally plausible but systemically inconsistent changes.
 
+### Preserve intent continuity, not merely conversation history
+
+Longer context windows and searchable conversation logs do not ensure that an AI development agent will apply an earlier requirement to a later task. The agent must be able to determine which prior decisions are relevant, still valid, and applicable to the present component and scope.
+
+Durable requirements and decisions should therefore record enough structure to support:
+
+- retrieval of potentially relevant constraints;
+- verification that each constraint applies to the current task;
+- explicit scope, such as component, environment, workflow, or change class;
+- supersession when a later decision replaces an earlier one;
+- coexistence when apparently conflicting decisions apply to different scopes;
+- traceability from the active constraint to implementation and validation evidence.
+
+Conversation history is an audit trail, not automatically an effective model of current intent. For consequential work, the agent should operate from a task-specific projection of active constraints assembled from maintained sources such as architecture decision records (ADRs), specifications, policies, repository guidance, and acceptance criteria. Retrieval should identify candidates; it should not decide validity by itself.
+
 ## Recommended Adoption Stages
 
 | Stage | AI role | Human control | Example |
@@ -135,6 +150,7 @@ Before allowing an AI development agent to modify a repository or system, assess
 | Verification | Can correctness be demonstrated without relying primarily on human intuition? | Characterization, unit, integration, contract, regression, and policy tests |
 | Operational behavior | Are failure modes, telemetry, recovery procedures, and side effects visible? | Logs, metrics, traces, correlation identifiers, runbooks, idempotency and retry rules |
 | Constraints | Are security, privacy, compliance, data-handling, and repository restrictions machine-discoverable where practical? | Policy-as-code, protected paths, approved-tool configuration, automated checks |
+| Intent continuity | Can the system determine which earlier requirements and decisions remain active and applicable to the current task? | Scoped decision records, supersession metadata, current specifications, task-specific active-constraint summaries |
 | Design currency | Does documented design describe the actual system, and is it updated when consequential changes are made? | Reviewable documentation changes, ADRs, drift checks, ownership and review dates |
 
 ### Readiness interpretation
@@ -171,7 +187,9 @@ Preserve representative examples of successful and unsuccessful AI output, such 
 - workflow and business-rule explanations;
 - security-sensitive changes;
 - fabricated tables, interfaces, dependencies, or requirements;
-- failures caused by missing repository or business context.
+- failures caused by missing repository or business context;
+- failures caused by retrieving an obsolete, superseded, or incorrectly scoped requirement;
+- failures caused by retaining a valid requirement but not applying it to a later task.
 
 For each case, record the expected characteristics of an acceptable answer. Re-run these cases when evaluating new models, prompts, tools, or configurations.
 
@@ -284,6 +302,10 @@ The following previously reviewed resources reinforce specific parts of this fra
 ### AI-ready software design
 
 - [Software Design in the Age of AI](https://towardsdatascience.com/software-design-in-the-age-of-ai/) — Frames AI development agents as consumers and future modifiers of software. It reinforces the need for explicit, current design; discoverable reusable components; navigable dependencies; contained change impact; and traceability from requirements to code and tests.
+
+### Intent continuity and agent memory
+
+- [Coding Agents Don’t Need Longer History—They Need Intent Continuity](https://towardsdatascience.com/coding-agents-dont-need-longer-history-they-need-intent-continuity/) — Demonstrates a small structured-memory implementation that separates retrieval from verification and models scope and supersession explicitly. Its synthetic evaluation suggests that task-specific verification can recover requirements missed by keyword retrieval, although the small, schema-aligned benchmark should be treated as illustrative rather than general proof. The practical pattern is an **active decision projection**: derive the currently applicable constraints before an agent plans or changes code, then verify the result against them.
 
 ## Conclusion
 
