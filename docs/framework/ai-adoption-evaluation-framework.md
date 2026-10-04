@@ -50,6 +50,14 @@ Providing access to a tool does not establish competence. Engineers need practic
 - model and vendor differences;
 - accountability for AI-assisted work.
 
+### Preserve learning and independent judgment
+
+AI-assisted work should build the team's ability to understand, challenge, and operate the system. Completing an artifact does not by itself demonstrate that an engineer has acquired the knowledge needed to validate it or handle an unfamiliar failure.
+
+For selected learning tasks, engineers should form an initial explanation or predict an outcome before consulting AI, compare that reasoning with the generated analysis, and resolve disagreements using source code, execution evidence, and knowledgeable colleagues. Revisit the material later and use different forms of evidence, such as code, dependency diagrams, logs, and recovery exercises.
+
+Apply this selectively: a small representative sample can support deliberate learning while AI accelerates broader inventory and drafting. Managers should allow time for investigation and knowledge transfer. At [the firm], an experienced engineer's learning objectives may center on local business rules, undocumented dependencies, and SQL Server operations rather than general programming fundamentals.
+
 ### Human accountability remains explicit
 
 An engineer remains responsible for submitted code, analysis, and decisions regardless of how much AI contributed. AI-generated explanations or recommendations are evidence to assess, not authority.
@@ -185,6 +193,12 @@ Validate an initial sample with the incumbent engineers and relevant business ow
 
 This experiment aligns with restartable, auditable, composable batch processing: it can reveal where existing jobs would benefit from immutable input batches, explicit execution state, preserved attempt history, and controlled recovery. Those are candidate improvements to assess against actual evidence, not prerequisites imposed on every job.
 
+#### Deliberate learning within the job review
+
+Choose a small representative sample of jobs for deeper investigation. Before reviewing AI output, have the engineer explain each job's inputs, changes, outputs, dependencies, and expected behavior if a step fails. Compare that explanation with the AI analysis, then resolve gaps through source inspection, execution evidence, and incumbent knowledge. Capture the verified reasoning and any remaining uncertainties.
+
+Revisit the sample later with a different scenario, such as late input, a partial commit, or a rerun after failure. Check whether the engineer can independently explain the consequences, identify missing evidence, and describe safe recovery. Use these exercises to assess knowledge transfer, not to require manual analysis of every job before AI assistance.
+
 ### Experiment 3: Classification and advisory triage
 
 Classification assigns an input to one of a predefined set of categories. AI may help interpret varied language and incomplete context; known error codes and explicit validation rules should continue to use deterministic logic where sufficient.
@@ -284,6 +298,20 @@ Candidate measures include:
 
 Where practical, compare similar tasks completed with and without AI. Measure accepted outcomes rather than generated volume.
 
+### Evaluate learning and independent understanding
+
+Define a learning objective alongside the delivery objective for selected pilot tasks. For the SQL Server Agent review, this may include understanding local business purpose, dependency ordering, transaction boundaries, and recovery behavior.
+
+Assess whether engineers can:
+
+- Explain a sampled workflow and justify its dependencies using evidence.
+- Detect and correct an unsupported AI claim or an omitted dependency.
+- Predict the consequences of an unfamiliar failure or rerun scenario.
+- Locate the source evidence and distinguish confirmed behavior from assumptions.
+- Retain and apply that understanding in a later session.
+
+Compare the engineer's initial and later explanations, recording substantive corrections and unresolved gaps. Track whether another engineer can use the validated documentation to investigate a new scenario. These are proposed practical assessment measures, not a validated learning benchmark. Evaluate them alongside delivery time, accepted quality, review effort, and cost; do not equate documentation volume or faster completion with improved understanding.
+
 ## Guardrails for Increasing Autonomy
 
 Any future autonomous behavior should be:
@@ -371,6 +399,10 @@ The following previously reviewed resources reinforce specific parts of this fra
 ### Advisory operational analysis
 
 - [Atlassian Automates Root Cause Analysis by Correlating Metrics, Logs and Traces](https://www.infoq.com/news/2026/09/atlassian-automated-rca/) — Illustrates a potentially valuable advisory use case: correlating operational evidence to propose likely causes while engineers retain responsibility for diagnosis and remediation. This would require sufficiently mature logs, metrics, traces, and correlation identifiers.
+
+### Deliberate learning during AI-assisted work
+
+- [How to Develop Software Engineering Skills in the Age of AI](https://www.infoq.com/news/2026/10/software-engineering-skills/) — Reports Chelsea Troy's distinction between accelerating task completion and developing understanding. Her discussion of prediction, spaced practice, varied formats, and management support informs the learning principle above. The SQL Server Agent exercise and assessment measures are adaptations proposed for [the firm], not experiments demonstrated by the article.
 
 ### AI-ready software design
 
