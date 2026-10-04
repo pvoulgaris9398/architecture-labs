@@ -70,6 +70,14 @@ Classification must consider the affected system, data, workflow, permissions, d
 
 Early experiments should produce proposals that humans can inspect, correct, or discard before they affect production.
 
+### Make execution permissions explicit and enforceable
+
+When an AI agent can execute commands, modify files, run tests, or call services, its permitted access should be a versioned, reviewable engineering artifact. Record the allowed tools, filesystem locations, network destinations, credentials, persistence, and resource limits for the task. The agent must not be able to widen its own permissions.
+
+Distinguish requested permissions from host-approved grants and runtime enforcement. A declaration or prompt alone does not establish a security boundary. Verify that the chosen environment blocks prohibited access, and review permission expansion separately from routine software updates. Record the effective grants and environment version with each execution.
+
+Isolation, data handling, and correctness remain separate concerns. A sandbox does not authorize sending source material to a model provider, validate generated SQL, or make actions against an accessible external service harmless. Continue to apply approved data handling, human review, and deterministic validation.
+
 ### Evidence before expansion
 
 Adoption should expand based on demonstrated quality, safety, and value. Tool usage, token consumption, and anecdotal enthusiasm are not sufficient measures of success.
@@ -360,6 +368,34 @@ Any future autonomous behavior should be:
 - Classify them by business impact and recoverability.
 - Introduce automation only for demonstrably low-risk cases with complete guardrails.
 
+### Optional pilot: A bounded executable-agent environment
+
+Added October 4, 2026. Evaluate a repeatable analysis environment before introducing a broader agent platform. Docker Sandbox Kits are one candidate implementation; the requirements below are independent of that product.
+
+| Task | Proposed access boundary | Reviewable result |
+| --- | --- | --- |
+| SQL Server Agent ecosystem review | Read-only sanitized exports of job definitions, schedules, history, and referenced code; separate writable output directory; no production database connection | Inventory, dependency map, evidence references, and improvement backlog |
+| Legacy-code analysis or refactoring | Selected repository copy, approved build tools, local tests, and narrowly permitted network access | Analysis, test results, and reviewable changes |
+| Restartable ETL lab | Disposable test database, synthetic input batches, and access limited to lab resources | Failure/recovery observations, proposed SQL, and validation evidence |
+
+#### Initial scope and controls
+
+Start with the SQL Server Agent export-analysis task. Allow the agent to run analysis scripts and produce artifacts while enforcing read-only access to the input evidence. Permit only the model endpoint and other destinations explicitly needed by the approved tool configuration. Supply task-scoped credentials where needed; do not inherit broad workstation credentials, host directories, or control of the host container runtime.
+
+Record the environment or image version, tool versions, model configuration, input snapshot identity, requested permissions, effective grants, executed commands, and output artifacts. Where using images, pin immutable digests so that the reviewed environment can be identified precisely. Logs should omit secret values. Retain outputs for human assessment; no production changes are part of this pilot.
+
+#### Verify the boundary and assess value
+
+Before using firm material, run harmless checks with synthetic fixtures to confirm that the agent cannot modify protected inputs, reach an unapproved endpoint, access an unrelated directory, or obtain an ungranted credential. Confirm that authorized analysis and report generation succeed. Test the update workflow with a deliberately expanded permission request and verify that it is held for review. Do not assume that a packaged policy is enforced simply because the image runs successfully.
+
+Evaluate setup and maintenance effort, analysis quality, repeatability, execution visibility, and whether the boundary tests behave as expected. Compare the environment with a simpler restricted workstation or virtual machine arrangement. Expand only if it provides useful execution capability and demonstrable control at a supportable cost for the small team.
+
+#### Docker implementation considerations
+
+Docker's [Sandbox Kit specification announcement](https://www.docker.com/blog/docker-sandbox-kit-spec/) describes an ordinary Open Container Initiative (OCI) image carrying the agent, tools, and typed permission requests. A conforming runtime enforces those requests subject to host approval; the annotation is inert without that runtime. Docker describes micro virtual machine isolation for Docker Sandboxes, proxy-managed credentials for supported requests, and permission-expansion detection for runtimes that gate updates.
+
+The [InfoQ recap](https://www.infoq.com/news/2026/10/docker-sandbox-ai-agent/) reports that cross-runtime portability has not yet been demonstrated and does not establish confirmed Cloud Native Computing Foundation (CNCF) program acceptance or maturity. Treat the implementation as a candidate to evaluate. Confirm current platform support, licensing, networking behavior, available audit evidence, and suitability for the actual workstation and lab environment before selecting it.
+
 ## Initial Recommendation
 
 Begin with a narrow pilot focused on legacy-system comprehension, documentation, and characterization-test generation. Prioritize a read-only review of the SQL Server Agent job ecosystem, with advisory code review and historical-failure classification as additional bounded experiments. These activities align with likely modernization needs, preserve human review, and can produce measurable benefits without granting AI operational authority.
@@ -399,6 +435,11 @@ The following previously reviewed resources reinforce specific parts of this fra
 ### Advisory operational analysis
 
 - [Atlassian Automates Root Cause Analysis by Correlating Metrics, Logs and Traces](https://www.infoq.com/news/2026/09/atlassian-automated-rca/) — Illustrates a potentially valuable advisory use case: correlating operational evidence to propose likely causes while engineers retain responsibility for diagnosis and remediation. This would require sufficiently mature logs, metrics, traces, and correlation identifiers.
+
+### Explicit execution permissions and sandbox enforcement
+
+- [Docker Sandbox Kit Spec: Packaging AI Agent Permissions as OCI Images](https://www.infoq.com/news/2026/10/docker-sandbox-ai-agent/) — Motivates packaging agent access requests as reviewable artifacts. The proposed lab applies this idea to bounded execution while retaining separate checks for data handling and correctness.
+- [From Dockerfile to Kit: the Docker Sandboxes Kit Specification](https://www.docker.com/blog/docker-sandbox-kit-spec/) — Primary-source description of Kit declarations, runtime enforcement, isolation, and permission-expansion review. Product claims should be verified in the selected environment.
 
 ### Deliberate learning during AI-assisted work
 
