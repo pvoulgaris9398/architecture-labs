@@ -137,6 +137,79 @@ The strongest initial candidates combine meaningful effort reduction with low ex
 - Explain execution plans or potentially problematic SQL patterns.
 - Identify changes involving permissions, sensitive data, or large blast radii for mandatory human review.
 
+## Proposed Experiments: Code Review, Legacy Analysis, and Classification
+
+Added October 4, 2026. These are proposed experiments for [the firm], not capabilities demonstrated or validated by the source article.
+
+### Experiment 1: Advisory code review
+
+Use AI to review a small set of historical changes in SQL, C#, or Java. Provide the relevant requirements, surrounding code, and known constraints. Ask for evidence-backed correctness, security, maintainability, and regression concerns, with references to the affected code.
+
+Compare the findings with human review and known defects. Measure useful findings, missed defects, false alarms, review effort, and cost per accepted finding. Start with historical or non-production changes; engineers retain responsibility for conclusions and approval.
+
+### Experiment 2: Legacy-system analysis, prioritizing SQL Server Agent jobs
+
+Review the SQL Server Agent job ecosystem at [the firm] to understand its behavior and identify practical improvements. The initial result should be a validated inventory, dependency map, and prioritized improvement backlog. No assumption is made that the current ecosystem has the problems listed below.
+
+#### Evidence to collect
+
+Start with an approved, read-only export of representative job definitions, steps, schedules, execution history, and referenced code. Include, where available:
+
+- Job identifiers, names, enabled status, owners, business purposes, and accountable business and technical contacts.
+- Step order, execution subsystem, target database, commands, success and failure actions, retry settings, and execution identity or proxy references.
+- Schedules, expected processing windows, duration trends, failure history, and alert or notification configuration.
+- Referenced stored procedures, scripts, packages, files, linked servers, and external systems.
+- Existing runbooks, service expectations, known dependencies, and recovery procedures.
+
+Remove credentials and other restricted information before submitting material to an approved AI tool. Record the export time, environment, and missing evidence. Definitions and history alone may not expose dependencies implemented in external scripts, dynamic SQL, application code, or manual procedures.
+
+#### Questions for the review
+
+- What business process does each job implement, and which inputs and outputs does it depend on?
+- Which dependencies are explicit, and which appear to rely on schedule timing, files arriving, or undocumented operating knowledge?
+- Are failure paths and notifications consistent with the actual business outcome? Could an earlier failure be obscured by a later successful step?
+- Are retries appropriate for the failure type and safe with respect to duplicate processing and partial commits?
+- Can processing resume from a failed step or record, or does recovery require rerunning successful work?
+- Where would batch identity, correlation identifiers, row counts, reconciliation, or clearer logging improve diagnosis and recovery?
+- Are duplicated steps, unclear ownership, obsolete candidates, unnecessary polling, overlapping schedules, or long-running work worth investigating?
+- Which business logic could become a reusable process with explicit inputs, outputs, and execution contracts?
+- Which changes could improve the existing SQL Server Agent arrangement without introducing a new orchestration platform?
+
+Treat overlap and long duration as investigation signals, not proof of contention or inefficient SQL. Validate performance recommendations with appropriate runtime evidence. Confirm business purpose and downstream consumers before recommending retirement or consolidation.
+
+#### Reviewable outputs and evaluation
+
+Produce a job catalog, an evidence-backed dependency map, and a short backlog. For each finding, record the job and step, observed evidence, business impact, proposed improvement, uncertainty, verification needed, effort estimate, and acceptance criteria. Mark dependencies as confirmed, inferred, or unknown; a plausible inference must not become an asserted fact.
+
+Validate an initial sample with the incumbent engineers and relevant business owners, especially while institutional knowledge remains available. Measure inventory accuracy, dependency omissions, accepted recommendations, reviewer corrections, time saved, and investigation effort. Prioritize changes by business criticality and recovery difficulty as well as implementation effort.
+
+This experiment aligns with restartable, auditable, composable batch processing: it can reveal where existing jobs would benefit from immutable input batches, explicit execution state, preserved attempt history, and controlled recovery. Those are candidate improvements to assess against actual evidence, not prerequisites imposed on every job.
+
+### Experiment 3: Classification and advisory triage
+
+Classification assigns an input to one of a predefined set of categories. AI may help interpret varied language and incomplete context; known error codes and explicit validation rules should continue to use deterministic logic where sufficient.
+
+| Input | Candidate categories | Advisory purpose |
+| --- | --- | --- |
+| Historical processing failure | Source unavailable; invalid data; configuration issue; unknown or needs review | Suggest investigation routing |
+| Support request | Reporting; access; data correction; application defect; unknown or needs review | Suggest the responsible area |
+| Stored procedure and dependencies | System of record; transient cache; workflow state; reporting model; integration staging; mixed or unclear | Assist SQL-estate documentation |
+| Vendor release note | Relevant to current configuration; potentially relevant; unrelated; needs review | Assist manual screening |
+
+Start with historical processing failures. Supply the error message, relevant log entries, step description, and human-reviewed category definitions. Ask for a suggested category and supporting evidence when the chosen tool supports explanation. Evaluate any constrained-choice service separately from an explanatory model or workflow; do not assume the service returns explanations or calibrated confidence.
+
+A predefined answer list constrains output format, not correctness. Preserve an explicit unknown or needs-review outcome. Separate observed symptoms from inferred causes, and allow mixed classifications where a component has multiple responsibilities.
+
+Evaluate against human-reviewed examples, including ambiguous cases and uncommon but consequential failures. Track precision and recall by category, abstention frequency, incorrect high-impact routing, reviewer effort, and cost per accepted result. Compare with a simple rules-based baseline and repeat evaluation when models, prompts, or category definitions change.
+
+Classification may supplement ETL diagnosis and triage. It must not silently determine record validity, mark a failed step successful, authorize corrections, or establish retry eligibility. Those decisions remain explicit, testable business logic.
+
+### Platform developments to monitor
+
+The [OpenAI DevDay 2026 recap](https://www.infoq.com/news/2026/10/openai-devday-2026/) reports lower-cost models, managed agent execution and computer use, cloud coding environments, expanded plugins, persistent agents, shared workspaces, and a limited-preview Decisions API for predefined-choice tasks.
+
+These announcements motivate evaluation; they do not establish production reliability, suitability, or total operating cost at [the firm]. Select tools according to approved data handling, measurable task performance, auditability, permissions, and supportability. Prefer direct, read-only exports for the SQL Server Agent assessment where available; graphical computer use is not required for that experiment.
+
 ## AI-Readiness Assessment
 
 Before allowing an AI development agent to modify a repository or system, assess whether the environment provides enough explicit context and independently verifiable constraints. The objective is not to maximize documentation. It is to supply the minimum reliable context needed to navigate, change, and validate the system safely.
@@ -261,7 +334,7 @@ Any future autonomous behavior should be:
 
 ## Initial Recommendation
 
-Begin with a narrow pilot focused on legacy-system comprehension, documentation, and characterization-test generation. These activities align with likely modernization needs, preserve human review, and can produce measurable benefits without granting AI operational authority.
+Begin with a narrow pilot focused on legacy-system comprehension, documentation, and characterization-test generation. Prioritize a read-only review of the SQL Server Agent job ecosystem, with advisory code review and historical-failure classification as additional bounded experiments. These activities align with likely modernization needs, preserve human review, and can produce measurable benefits without granting AI operational authority.
 
 Do not initially pursue autonomous code approval. Treat it as a later case study whose prerequisites include mature source control, dependable automated testing, clear code ownership, risk classification, auditability, and sufficient evaluation evidence.
 
